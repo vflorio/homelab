@@ -1,0 +1,15 @@
+access.log
+acme.json
+packer_cache
+.terraform
+.terraform.lock*
+terraform.tfstate
+terraform.tfstate.backup
+
+terraform/templates
+dns/bind/*.jnl
+
+*.old
+.env
+*.tfvars
+*.pkrvars.hcl
