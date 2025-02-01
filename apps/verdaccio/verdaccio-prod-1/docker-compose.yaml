@@ -1,0 +1,26 @@
+---
+networks:
+  homelab:
+    external: true
+
+volumes:
+  verdaccio:
+    driver: local
+
+services:
+  verdaccio:
+    container_name: verdaccio
+    image: verdaccio/verdaccio:latest
+    volumes:
+      - verdaccio:/verdaccio/storage
+    labels:
+      traefik.enable: "true"
+      traefik.http.services.verdaccio.loadbalancer.server.port: "4873"
+      traefik.http.services.verdaccio.loadbalancer.server.scheme: "http"
+      traefik.http.routers.verdaccio-https.entrypoints: "websecure"
+      traefik.http.routers.verdaccio-https.rule: "Host(`verdaccio.srv-prod-1.intranet.vflorio.com`)"
+      traefik.http.routers.verdaccio-https.tls: "true"
+      traefik.http.routers.verdaccio-https.tls.certresolver: "cloudflare"
+    restart: unless-stopped
+    networks:
+      - homelab

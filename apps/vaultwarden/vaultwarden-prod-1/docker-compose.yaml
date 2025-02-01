@@ -1,0 +1,45 @@
+---
+networks:
+  homelab:
+    external: true
+
+volumes:
+  vaultwarden-data:
+    driver: local
+
+services:
+  vaultwarden:
+    image: vaultwarden/server:latest
+    restart: unless-stopped
+    container_name: vaultwarden
+    hostname: vaultwarden
+    networks:
+      - homelab
+    volumes:
+      - vaultwarden-data:/data
+    labels:
+      traefik.enable: "true"
+      traefik.http.services.vaultwarden.loadbalancer.server.port: "80"
+      traefik.http.services.vaultwarden.loadbalancer.server.scheme: "http"
+      traefik.http.routers.vaultwarden-https.entrypoints: "websecure"
+      traefik.http.routers.vaultwarden-https.rule: "Host(`vaultwarden.srv-prod-1.intranet.vflorio.com`)"
+      traefik.http.routers.vaultwarden-https.tls: "true"
+      traefik.http.routers.vaultwarden-https.tls.certresolver: "cloudflare"
+    environment:
+      - LOGIN_RATELIMIT_MAX_BURST=10
+      - LOGIN_RATELIMIT_SECONDS=60
+      - ADMIN_RATELIMIT_MAX_BURST=10
+      - ADMIN_RATELIMIT_SECONDS=60
+      - ADMIN_TOKEN=${ADMIN_TOKEN} # python3 -c "import secrets; print(secrets.token_urlsafe(64))"
+      - SENDS_ALLOWED=true
+      - EMERGENCY_ACCESS_ALLOWED=true
+      - WEB_VAULT_ENABLED=true
+      - SIGNUPS_ALLOWED=false
+      - SMTP_HOST=smtp.youremaildomain.com
+      - SMTP_FROM=vaultwarden@youremaildomain.com
+      - SMTP_FROM_NAME=Vaultwarden
+      - SMTP_SECURITY=SECURITYMETHOD
+      - SMTP_PORT=XXXX
+      - SMTP_USERNAME=vaultwarden@youremaildomain.com
+      - SMTP_PASSWORD=YourReallyStrongPasswordHere
+      - SMTP_AUTH_MECHANISM="Mechanism"

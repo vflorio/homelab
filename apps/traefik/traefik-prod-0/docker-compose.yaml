@@ -1,0 +1,29 @@
+---
+networks:
+  homelab:
+    external: true
+
+services:
+  traefik:
+    container_name: traefik
+    image: traefik:3
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./config/traefik.yaml:/etc/traefik/traefik.yaml:ro
+      - ./config/conf/:/etc/traefik/conf/
+      - ./config/certs/:/etc/traefik/certs/
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.traefik-https.service: "api@internal"
+      traefik.http.routers.traefik-https.entrypoints: "websecure"
+      traefik.http.routers.traefik-https.rule: "Host(`traefik.srv-prod-0.intranet.vflorio.com`)"
+      traefik.http.routers.traefik-https.tls: "true"
+      traefik.http.routers.traefik-https.tls.certresolver: "cloudflare"
+    environment:
+      - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
+    networks:
+      - homelab
+    restart: unless-stopped

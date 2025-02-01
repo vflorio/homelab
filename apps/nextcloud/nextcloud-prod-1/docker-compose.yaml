@@ -1,0 +1,46 @@
+---
+networks:
+  homelab:
+    external: true
+
+volumes:
+  nextcloud-data:
+  nextcloud-db:
+
+services:
+  nextcloud-app:
+    image: nextcloud:latest
+    container_name: nextcloud-app
+    volumes:
+      - nextcloud-data:/var/www/html
+    labels:
+      traefik.enable: "true"
+      traefik.http.services.nextcloud.loadbalancer.server.port: "80"
+      traefik.http.services.nextcloud.loadbalancer.server.scheme: "http"
+      traefik.http.routers.nextcloud-https.entrypoints: "websecure"
+      traefik.http.routers.nextcloud-https.rule: "Host(`nextcloud.srv-prod-1.intranet.vflorio.com`)"
+      traefik.http.routers.nextcloud-https.tls: "true"
+      traefik.http.routers.nextcloud-https.tls.certresolver: "cloudflare"
+    environment:
+      - MYSQL_PASSWORD=nextcloud
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=$MYSQL_USER
+      - MYSQL_HOST=nextcloud-db
+    restart: unless-stopped
+    networks:
+      - homelab
+
+  nextcloud-db:
+    image: mariadb:latest
+    container_name: nextcloud-db
+    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+    volumes:
+      - nextcloud-db:/var/lib/mysql
+    environment:
+      - MYSQL_RANDOM_ROOT_PASSWORD=true
+      - MYSQL_PASSWORD=nextcloud
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=$MYSQL_USER
+    restart: unless-stopped
+    networks:
+      - homelab

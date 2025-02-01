@@ -1,0 +1,28 @@
+---
+networks:
+  homelab:
+    external: true
+
+volumes:
+  registry-data:
+    driver: local
+
+services:
+  container-registry:
+    container_name: container-registry
+    image: registry:2
+    environment:
+      REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /data
+    volumes:
+      - registry-data:/data
+    labels:
+      traefik.enable: "true"
+      traefik.http.services.container-registry.loadbalancer.server.port: "5000"
+      traefik.http.services.container-registry.loadbalancer.server.scheme: "http"
+      traefik.http.routers.container-registry-https.entrypoints: "websecure"
+      traefik.http.routers.container-registry-https.rule: "Host(`container-registry.srv-prod-1.intranet.vflorio.com`)"
+      traefik.http.routers.container-registry-https.tls: "true"
+      traefik.http.routers.container-registry-https.tls.certresolver: "cloudflare"
+    restart: unless-stopped
+    networks:
+      - homelab

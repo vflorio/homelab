@@ -1,0 +1,48 @@
+---
+networks:
+  homelab:
+    external: false
+
+services:
+  gitea:
+    image: docker.io/gitea/gitea:1.23.1
+    container_name: gitea
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - GITEA__database__DB_TYPE=postgres
+      - GITEA__database__HOST=db:5432
+      - GITEA__database__NAME=gitea
+      - GITEA__database__USER=gitea
+      - GITEA__database__PASSWD=gitea
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.gitea-https.entrypoints=websecure
+      - traefik.http.routers.gitea-https.rule=Host(`gitea.srv-prod-1.intranet.vflorio.com`)
+      - traefik.http.routers.gitea-https.tls=true
+      - traefik.http.routers.gitea-https.tls.certresolver=cloudflare
+      - traefik.http.services.gitea-service.loadbalancer.server.port=3000
+    networks:
+      - homelab
+    ports:
+      - "3000:3000"
+      - "3022:22"
+    volumes:
+      - ./gitea:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    depends_on:
+      - db
+
+  db:
+    image: docker.io/library/postgres:14
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=gitea
+      - POSTGRES_PASSWORD=gitea
+      - POSTGRES_DB=gitea
+    networks:
+      - homelab
+    volumes:
+      - ./postgres:/var/lib/postgresql/data

@@ -1,0 +1,27 @@
+---
+networks:
+  homelab:
+    external: true
+
+volumes:
+  portainer-data:
+    driver: local
+    
+services:
+  app:
+    container_name: portainer
+    image: portainer/portainer-ce:2.19.4-alpine
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer-data:/data
+    labels:
+      traefik.enable: "true"
+      traefik.http.services.portainer.loadbalancer.server.port: "9000"
+      traefik.http.services.portainer.loadbalancer.server.scheme: "http"
+      traefik.http.routers.portainer-https.entrypoints: "websecure"
+      traefik.http.routers.portainer-https.rule: "Host(`portainer.srv-prod-0.intranet.vflorio.com`)"
+      traefik.http.routers.portainer-https.tls: "true"
+      traefik.http.routers.portainer-https.tls.certresolver: "cloudflare"
+    restart: unless-stopped
+    networks:
+      - homelab
