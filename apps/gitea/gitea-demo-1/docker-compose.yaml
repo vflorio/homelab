@@ -1,21 +1,37 @@
 ---
 networks:
   homelab:
-    external: false
+    external: true
+
+volumes:
+  gitea-data:
+  gitea-postgres:
 
 services:
   gitea:
-    image: docker.io/gitea/gitea:1.23.1
-    container_name: gitea
+    image: bitnami/gitea:1.20.3
+    volumes:
+      - gitea-data:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
     environment:
-      - USER_UID=1000
-      - USER_GID=1000
-      - GITEA__database__DB_TYPE=postgres
-      - GITEA__database__HOST=db:5432
-      - GITEA__database__NAME=gitea
-      - GITEA__database__USER=gitea
-      - GITEA__database__PASSWD=gitea
-    restart: unless-stopped
+      GITEA_DATABASE_HOST: gitea-postgres
+      GITEA_DATABASE_NAME: gitea_db
+      GITEA_DATABASE_USERNAME: gitea
+      GITEA_DATABASE_PASSWORD: gitea
+      GITEA_ADMIN_USER: vflorio
+      GITEA_ADMIN_PASSWORD: ${GITEA_ADMIN_PASSWORD}
+      GITEA_ADMIN_EMAIL: admin@localhost
+      GITEA_RUN_MODE: prod
+      GITEA_DOMAIN: gitea.srv-prod-1.intranet.vflorio.com
+      GITEA_SSH_DOMAIN: gitea.srv-prod-1.intranet.vflorio.com
+      GITEA_ROOT_URL: https://gitea.srv-prod-1.intranet.vflorio.com
+      GITEA_HTTP_PORT: 3000
+      GITEA_SSH_PORT: 2222
+      GITEA_SSH_LISTEN_PORT: 22
+      BITNAMI_DEBUG: true
+    networks:
+      - homelab
     labels:
       - traefik.enable=true
       - traefik.http.routers.gitea-https.entrypoints=websecure
@@ -23,26 +39,34 @@ services:
       - traefik.http.routers.gitea-https.tls=true
       - traefik.http.routers.gitea-https.tls.certresolver=cloudflare
       - traefik.http.services.gitea-service.loadbalancer.server.port=3000
-    networks:
-      - homelab
-    ports:
-      - "3000:3000"
-      - "3022:22"
-    volumes:
-      - ./gitea:/data
-      - /etc/timezone:/etc/timezone:ro
-      - /etc/localtime:/etc/localtime:ro
-    depends_on:
-      - db
-
-  db:
-    image: docker.io/library/postgres:14
     restart: unless-stopped
+    depends_on:
+      gitea-postgres:
+        condition: service_healthy
+  
+  gitea-postgres:
+    image: postgres:15
+    volumes:
+      - gitea-postgres:/var/lib/postgresql/data
     environment:
-      - POSTGRES_USER=gitea
-      - POSTGRES_PASSWORD=gitea
-      - POSTGRES_DB=gitea
+      POSTGRES_DB: gitea_db
+      POSTGRES_USER: gitea
+      POSTGRES_PASSWORD: gitea
     networks:
       - homelab
-    volumes:
-      - ./postgres:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "pg_isready",
+          "-q",
+          "-d",
+          "gitea_db",
+          "-U",
+          "gitea",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped

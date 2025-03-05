@@ -10,8 +10,7 @@ Comandi
 
 
   Terraform
-  
-    
+
     Inizializza il progetto Terraform installando i provider e i moduli necessari.
       terraform init
     
@@ -26,7 +25,6 @@ Comandi
 
   Remote Name Daemon Control
 
-    
     Sincronizza i dati del file journal con il file di zona per la zona
       rndc sync intranet.vflorio.com
 

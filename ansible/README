@@ -44,6 +44,18 @@ srv-prod-1
 
   # drawio
   ansible-playbook -i inventory/vflorio.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-1.intranet.vflorio.com local_project_dir=/mnt/z/Personal/homelab/apps/drawio/drawio-prod-1/ remote_project_dir=~/docker/drawio" 
-  
+
   # passbolt
   ansible-playbook -i inventory/vflorio.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-1.intranet.vflorio.com local_project_dir=/mnt/z/Personal/homelab/apps/passbolt/passbolt-prod-1/ remote_project_dir=~/docker/passbolt" 
+
+# ??
+docker-compose exec passbolt su -m -c "/usr/share/php/passbolt/bin/cake \
+passbolt register_user \
+-u floriovincenzo98@gmail.com \
+-f Vincenzo \
+-l Florio \
+-r admin" -s /bin/sh www-data
+
+
+Configurazione SDS
+  ansible-playbook -i inventory/sds.ini playbooks/install-docker.yml -e "hosts=sds-legacy"
