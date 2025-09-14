@@ -14,10 +14,12 @@ services:
       - SUDO_PASSWORD=${CODE_SERVER_SUDO_PASSWORD:-changeme}
     user: "1000:1000"
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.code-server.rule=Host(`code.srv-prod-1.intranet.vflorio.com`)"
-      - "traefik.http.routers.code-server.entrypoints=web"
-      - "traefik.http.services.code-server.loadbalancer.server.port=8080"
+      - traefik.enable=true
+      - traefik.http.routers.code-server-https.entrypoints=websecure
+      - traefik.http.routers.code-server-https.rule=Host(`code.srv-prod-1.intranet.vflorio.com`)
+      - traefik.http.routers.code-server-https.tls=true
+      - traefik.http.routers.code-server-https.tls.certresolver=cloudflare
+      - traefik.http.services.code-server.loadbalancer.server.port=8080
     networks:
       - homelab
 

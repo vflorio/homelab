@@ -13,6 +13,6 @@ apps:
   - semaphore
   
   # Infrastructure services  
-  - pihole
-  - tailscale
   - grafana
+  - pihole
+  # - tailscale WIP

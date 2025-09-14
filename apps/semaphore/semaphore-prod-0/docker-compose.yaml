@@ -6,7 +6,7 @@ networks:
 volumes:
   semaphore_config:
     driver: local
-    
+
 services:
   semaphore:
     container_name: semaphore
@@ -30,5 +30,3 @@ services:
     networks:
       - homelab
     restart: unless-stopped
-
-

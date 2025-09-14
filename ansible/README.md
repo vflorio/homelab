@@ -3,6 +3,7 @@
 ## Installazione iniziale
 
 ### Prerequisiti
+
 ```bash
 # Installa le estensioni Docker per Ansible
 ansible-galaxy collection install community.docker
@@ -12,6 +13,7 @@ docker network create -d bridge homelab
 ```
 
 ### Installazione Docker sui server
+
 ```bash
 ansible-playbook -i inventory/main.ini playbooks/install-docker.yml -e "hosts=srv-demo"
 ```
@@ -25,23 +27,27 @@ Lo script `deploy.sh` semplifica tutti i deploy:
 #### Comandi Principali
 
 **Deploy completo di tutti i server:**
+
 ```bash
 ./deploy.sh deploy-all
 ```
 
 **Deploy completo di un server specifico:**
+
 ```bash
 ./deploy.sh deploy-server srv-prod-0
 ./deploy.sh deploy-server srv-prod-1
 ```
 
 **Deploy di una singola applicazione:**
+
 ```bash
 ./deploy.sh deploy-app srv-prod-0 traefik
 ./deploy.sh deploy-app srv-prod-1 gitea
 ```
 
 **Lista server e applicazioni:**
+
 ```bash
 ./deploy.sh list-servers
 ./deploy.sh list-apps srv-prod-1
@@ -72,16 +78,18 @@ Lo script `deploy.sh` semplifica tutti i deploy:
 Le configurazioni sono organizzate in `configs/`:
 
 ### srv-prod-0 (Management Server)
+
 - traefik (Load balancer)
 - authentik (Authentication system)
 - prometheus (Monitoring system)
-- portainer (Container management) 
+- portainer (Container management)
 - semaphore (Ansible UI)
 - pihole (DNS ad blocking)
 - tailscale (VPN mesh networking)
 - grafana (Metrics dashboard)
 
 ### srv-prod-1 (User Applications Server)
+
 - traefik (Load balancer)
 - authentik-outpost (Authentication proxy)
 - portainer-agent (Remote container management)
@@ -94,7 +102,6 @@ Le configurazioni sono organizzate in `configs/`:
 - excalidraw (Diagram tool)
 - penpot (Design tool)
 - drawio (Diagram tool)
-- passbolt (Password manager)
 - vaultwarden (Bitwarden server)
 - jellyfin (Media server)
 
@@ -103,14 +110,16 @@ Le configurazioni sono organizzate in `configs/`:
 Per aggiungere una nuova app:
 
 1. **Aggiungi alla configurazione server:**
+
    ```yaml
    # configs/srv-prod-1.yml
    apps:
      - traefik
-     - nuova-app  # <-- Aggiungi qui
+     - nuova-app # <-- Aggiungi qui
    ```
 
 2. **Crea la directory dell'app:**
+
    ```bash
    mkdir -p /mnt/c/Data/homelab/next/apps/nuova-app/nuova-app-prod-1/
    # Aggiungi docker-compose.yaml e file di config
@@ -126,6 +135,7 @@ Per aggiungere una nuova app:
 ### Problemi Comuni
 
 **Errore di connessione SSH:**
+
 ```bash
 # Verifica connettività
 ssh vflorio@srv-prod-0.intranet.vflorio.com
@@ -135,6 +145,7 @@ ssh vflorio@srv-prod-0.intranet.vflorio.com
 ```
 
 **Directory non trovata:**
+
 ```bash
 # Verifica struttura directory
 ls -la /mnt/c/Data/homelab/next/apps/gitea/
@@ -142,6 +153,7 @@ ls -la /mnt/c/Data/homelab/next/apps/gitea/
 ```
 
 **Log e Debug:**
+
 ```bash
 # Deploy con output verbose
 ./deploy.sh deploy-app srv-prod-1 gitea --verbose
@@ -166,6 +178,7 @@ ls -la /mnt/c/Data/homelab/next/apps/gitea/
 Se necessario, è ancora possibile usare i comandi Ansible diretti:
 
 ### srv-prod-0
+
 ```bash
 # traefik
 ansible-playbook -i inventory/main.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-0.intranet.vflorio.com local_project_dir=/mnt/c/Data/homelab/next/apps/traefik/traefik-prod-0/ remote_project_dir=~/docker/traefik"
@@ -178,6 +191,7 @@ ansible-playbook -i inventory/main.ini playbooks/update-dockerdeploy.yml -e "ans
 ```
 
 ### srv-prod-1
+
 ```bash
 # traefik
 ansible-playbook -i inventory/main.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-1.intranet.vflorio.com local_project_dir=/mnt/c/Data/homelab/next/apps/traefik/traefik-prod-1/ remote_project_dir=~/docker/traefik"
@@ -206,18 +220,5 @@ ansible-playbook -i inventory/main.ini playbooks/update-dockerdeploy.yml -e "ans
 # drawio
 ansible-playbook -i inventory/main.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-1.intranet.vflorio.com local_project_dir=/mnt/c/Data/homelab/next/apps/drawio/drawio-prod-1/ remote_project_dir=~/docker/drawio"
 
-# passbolt
-ansible-playbook -i inventory/main.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-1.intranet.vflorio.com local_project_dir=/mnt/c/Data/homelab/next/apps/passbolt/passbolt-prod-1/ remote_project_dir=~/docker/passbolt"
-```
 
-## Comandi Speciali
-
-### Passbolt - Registrazione Utente Admin
-```bash
-docker-compose exec passbolt su -m -c "/usr/share/php/passbolt/bin/cake \
-passbolt register_user \
--u floriovincenzo98@gmail.com \
--f Vincenzo \
--l Florio \
--r admin" -s /bin/sh www-data
 ```

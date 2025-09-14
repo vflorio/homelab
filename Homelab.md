@@ -193,7 +193,7 @@ volumes:
 - [ ] **Container Registry** - TODO: Desc
 - [ ] **Verdaccio** - TODO: Desc
 - [ ] **Jellyfin** - TODO: Desc
-- [ ] **Passbolt** - Password manager
+- [ ] **VaultWarden** - Password manager
 - [ ] **Code Server** - VS Code nel browser
 - [ ] **Nextcloud** - Cloud storage e collaboration
 - [ ] **Excalidraw** - TODO: Desc

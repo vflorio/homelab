@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   authentik-proxy:
@@ -16,10 +15,12 @@ services:
     networks:
       - homelab
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.authentik-outpost.rule=Host(`outpost.srv-prod-1.intranet.vflorio.com`)"
-      - "traefik.http.routers.authentik-outpost.entrypoints=web"
-      - "traefik.http.services.authentik-outpost.loadbalancer.server.port=9000"
+      - traefik.enable=true
+      - traefik.http.routers.authentik-outpost-https.entrypoints=websecure
+      - traefik.http.routers.authentik-outpost-https.rule=Host(`outpost.srv-prod-1.intranet.vflorio.com`)
+      - traefik.http.routers.authentik-outpost-https.tls=true
+      - traefik.http.routers.authentik-outpost-https.tls.certresolver=cloudflare
+      - traefik.http.services.authentik-outpost.loadbalancer.server.port=9000
 
 networks:
   homelab:

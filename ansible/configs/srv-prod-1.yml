@@ -18,13 +18,12 @@ apps:
   
   # Productivity & Office
   - nextcloud
-  - onlyoffice
+  # - onlyoffice
   - excalidraw
   - penpot
   - drawio
   
   # Security & Password Management
-  - passbolt
   - vaultwarden
   
   # Media & Entertainment

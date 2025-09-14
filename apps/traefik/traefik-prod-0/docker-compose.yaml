@@ -16,12 +16,12 @@ services:
       - ./config/conf/:/etc/traefik/conf/
       - ./config/certs/:/etc/traefik/certs/
     labels:
-      traefik.enable: "true"
-      traefik.http.routers.traefik-https.service: "api@internal"
-      traefik.http.routers.traefik-https.entrypoints: "websecure"
-      traefik.http.routers.traefik-https.rule: "Host(`traefik.srv-prod-0.intranet.vflorio.com`)"
-      traefik.http.routers.traefik-https.tls: "true"
-      traefik.http.routers.traefik-https.tls.certresolver: "cloudflare"
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik-https.service=api@internal"
+      - "traefik.http.routers.traefik-https.entrypoints=websecure"
+      - "traefik.http.routers.traefik-https.rule=Host(`traefik.srv-prod-0.intranet.vflorio.com`)"
+      - "traefik.http.routers.traefik-https.tls=true"
+      - "traefik.http.routers.traefik-https.tls.certresolver=cloudflare"
     environment:
       - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
     networks:
