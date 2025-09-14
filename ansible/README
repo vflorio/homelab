@@ -55,7 +55,3 @@ passbolt register_user \
 -f Vincenzo \
 -l Florio \
 -r admin" -s /bin/sh www-data
-
-
-Configurazione SDS
-  ansible-playbook -i inventory/sds.ini playbooks/install-docker.yml -e "hosts=sds-legacy"

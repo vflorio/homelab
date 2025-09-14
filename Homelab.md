@@ -81,6 +81,90 @@
 | 2200 | srv-demo-0 | 192.168.1.180 | Demo | Admin Management Demo Server |
 | 2201 | srv-demo-1 | 192.168.1.181 | Demo | User Applications Demo Server |
 
+## Storage Architecture
+
+### Physical Storage Configuration
+
+Il server fisico principale (**silicon** - 192.168.1.1) gestisce lo storage attraverso una configurazione multi-tier:
+
+#### Primary Storage - NVMe
+- **Dispositivo**: NVMe SSD 1TB
+- **Utilizzo**: Hypervisor e Virtual Machines
+- **Scopo**: Storage ad alte prestazioni per:
+  - Sistema operativo Proxmox VE
+  - VM disk images (thin provisioning)
+  - VM snapshots e backup locali
+  - Swap e cache del sistema
+
+#### OpenMediaVault (OMV) Pool
+La gestione dei dati è centralizzata tramite **OpenMediaVault** su VM dedicata (nas - 192.168.1.151):
+
+##### SSD Pool - Application Data
+- **Dispositivo**: SSD (capacità variabile)
+- **Accesso**: Mount locale OMV + condivisione Samba
+- **Utilizzo**: Dati delle applicazioni Docker
+- **Contenuto**:
+  - Dati applicativi (npm store, container-registry, etc) 
+  - Configuration files e segreti
+  - Log files applicativi
+  - Archivio documenti e foto famiglia
+  - Storage per Nextcloud files
+
+##### HDD Pool - Media Storage
+- **Dispositivi**: 3x HDD SMR (Shingled Magnetic Recording)
+- **Configurazione**: JBOD (Just a Bunch Of Disks) - dischi indipendenti
+- **Accesso**: Condivisioni Samba da OMV (\\192.168.1.151\shares)
+- **Utilizzo**: Media server e archivio a lungo termine
+- **Contenuto**:
+  - Libreria multimediale Jellyfin (film, serie TV)
+
+
+### Storage Integration
+
+#### Samba Mount Configuration
+Gli storage OMV vengono montati sui server applicativi tramite Samba/CIFS:
+
+```bash
+# Mount automatico tramite /etc/fstab sui server Docker
+//192.168.1.151/app-data /mnt/ssd-data cifs credentials=/etc/samba/nas-creds,uid=1000,gid=1000,iocharset=utf8 0 0
+//192.168.1.151/media-library /mnt/hdd-media cifs credentials=/etc/samba/nas-creds,uid=1000,gid=1000,iocharset=utf8 0 0
+//192.168.1.151/backups /mnt/hdd-backups cifs credentials=/etc/samba/nas-creds,uid=1000,gid=1000,iocharset=utf8 0 0
+```
+
+#### Docker Volume Management
+```yaml
+# Configurazione volumi per applicazioni
+volumes:
+  # Dati critici su SSD (tramite Samba)
+  app_database:
+    driver: local
+    driver_opts:
+      type: cifs
+      o: "username=${NAS_USER},password=${NAS_PASS},vers=3.0"
+      device: "//192.168.1.151/app-data/databases"
+  
+  # Media su HDD JBOD (tramite Samba)
+  jellyfin_media:
+    driver: local
+    driver_opts:
+      type: cifs
+      o: "username=${NAS_USER},password=${NAS_PASS},vers=3.0"
+      device: "//192.168.1.151/media-library/jellyfin"
+```
+
+#### Backup Strategy per SMR Drives
+- **VM Snapshots**: Quotidiani su NVMe (retention: 7 giorni)
+- **VM Backup**: Settimanali su HDD JBOD via Samba (retention: 4 settimane)
+- **Application Data**: Backup incrementali SSD → HDD tramite rsync over Samba
+- **Media Archive**: JBOD con backup esterni mensili (nessuna ridondanza RAID)
+
+#### Performance Considerations per SMR
+- **SMR Drives**: Ottimizzati per scritture sequenziali grandi (>1MB)
+- **JBOD Benefits**: Nessun overhead RAID, gestione flessibile per drive failure
+- **Samba Tuning**: SMB3 con multichannel per throughput ottimale
+- **Write Patterns**: Jellyfin streaming (read-heavy) ideale per SMR
+- **Backup Windows**: Scritture batch notturne per evitare interferenze SMR
+
 ## Progetti
 
 ### Intranet Custom DNS Resolution
