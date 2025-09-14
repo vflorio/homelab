@@ -21,12 +21,12 @@ resource "proxmox_vm_qemu" "srv-prod-1" {
     boot = "order=virtio0;ide2"
 
     # VM CPU Settings
-    cores = 2
+    cores = 4
     sockets = 1
     cpu_type = "host"
     
     # VM Memory Settings
-    memory = 2048
+    memory = 4096
 
     # VM Network Settings
     network {
@@ -49,7 +49,7 @@ resource "proxmox_vm_qemu" "srv-prod-1" {
                 disk {
                     format = "raw"
                     storage = "local-lvm"
-                    size = 20
+                    size = 48
                 }
             }
         }
