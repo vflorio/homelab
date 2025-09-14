@@ -65,8 +65,16 @@ resource "proxmox_vm_qemu" "srv-prod-0" {
     # (Optional) Default User
     ciuser = "vflorio"
     
-    # (Optional) Add your SSH KEY
+    # (Optional) Add your SSH KEYs - HomeLab Device Keys
     sshkeys = <<EOF
-    ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCQmV7zookw6fRhx0wYqgZUmQWOMyGMKFUSpXOxX2ovkETBGDabU7st9tTK6K3zxykVPUGM1cwhQuGhB9fAiWlGAMF2WcMyBclBYEz1s9pJenyUX25ui47rwu6npjVAQN0DclWc9x/v0ooiASthIlF7CZsw8VK0S0EHw5MqObUMKrgVn/+SI63E0XT1qN6cOgFfeCpnAk6u2u/rTZyscpGQUnL0JXGN44gflKDFFs8LoMAly6wVzQn0SzLdrMzeVNKCwAWXH2DxPYLOrdMkjkm/qq8dpUt7v1zi9L65Ci0TJWOONJ1jCOFJNVh8YGAXQazYdfUIf2pi6nRRsVYbqoQTDlmXc6xHJgB9ppaiA9wpK4cW5bz9vcQBTfZxl71Woz0fMV9KWEt2xP08ovThhaZnngBKaPt6bo+gKihquDhVokTNsxOEhbNfuh09wNa2ZoQwTKPlADDrXvH3HgmT0jKSO/OdNQECp9DI4UQm0ttMiIMz1/VCR0oazlJGRyqGp28WEsUQiKp7iPfrB8IEKgxtXPUUW4h1b6NuuS7tWOdR4YRNFd0PyJ4Z83vNzgllePvj7fjYoohESer5zWc138ae03hHmAeAPPlobi41gq2iPAVUSkbSoklqLWhfq7LRw5hsNMgKCLtc+2q8iv7ADarCYkb95J3IbjC9J/rbOcwQDw== floriovincenzo98@gmail.com
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN9KEOXdWXLzje6wV3UdyDhGIJAYiplHp9T3CBqNaQSi silicon-homelab-2025-09-14
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPe+jlx13luhQaGUaKhBxctrGqnMPojuFsLY6ueaU4UE carbon-homelab-2025-09-14
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFDr8H7YMo8vYEsLGG7Fajxrc/hSm8dmJi5fD0gPhyk4 nitrogen-homelab-2025-09-14
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIk+9gU78p2YjX6qnJ05pbwV72lA2BhhamOCp41WjUIu boron-homelab-2025-09-14
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEjryCfRPjPiIxTXFWiBQwtp0v2t2IWJ7/+irrq8Y7yj phosphorus-homelab-2025-09-14
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGrdFzkXL28Ed5qAolx0oseX78/YH6rIViPYzdLYiTPP sulfur-homelab-2025-09-14
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJfM/qlE7yoXHOGPK4sNhl/QdL9Pr97+xU4BBEumxmms chlorine-homelab-2025-09-14
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBh2O0ySg7/uzKWRs65IZDp9Gi8oFS3zsNtspYVd4dsa argon-homelab-2025-09-14
+    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDpehUd+r1Z0Cy0fFZCrQ5wJfMZ08Apyi7ZMoNMFtrgM neon-homelab-2025-09-14
     EOF
 }
