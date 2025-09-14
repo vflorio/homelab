@@ -1,52 +1,52 @@
 Estensioni per docker 
   ansible-galaxy collection install community.docker
 
-ansible-playbook -i inventory/vflorio.ini playbooks/install-docker.yml -e "hosts=srv-demo"
+ansible-playbook -i inventory/main.ini playbooks/install-docker.yml -e "hosts=srv-demo"
 
 docker network create -d bridge homelab
 
 srv-prod-0
 
   # trafik
-  ansible-playbook -i inventory/vflorio.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-0.intranet.vflorio.com local_project_dir=/mnt/z/Personal/homelab/apps/traefik/traefik-prod-0/ remote_project_dir=~/docker/traefik" 
+  ansible-playbook -i inventory/main.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-0.intranet.vflorio.com local_project_dir=/mnt/z/Personal/homelab/apps/traefik/traefik-prod-0/ remote_project_dir=~/docker/traefik" 
  
   # portainer
-  ansible-playbook -i inventory/vflorio.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-0.intranet.vflorio.com local_project_dir=/mnt/z/Personal/homelab/apps/portainer/portainer-prod-0/ remote_project_dir=~/docker/portainer" 
+  ansible-playbook -i inventory/main.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-0.intranet.vflorio.com local_project_dir=/mnt/z/Personal/homelab/apps/portainer/portainer-prod-0/ remote_project_dir=~/docker/portainer" 
   
   # semaphore
-  ansible-playbook -i inventory/vflorio.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-0.intranet.vflorio.com local_project_dir=/mnt/z/Personal/homelab/apps/semaphore/semaphore-prod-0/ remote_project_dir=~/docker/semaphore" 
+  ansible-playbook -i inventory/main.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-0.intranet.vflorio.com local_project_dir=/mnt/z/Personal/homelab/apps/semaphore/semaphore-prod-0/ remote_project_dir=~/docker/semaphore" 
   
 srv-prod-1
   
   # traefik
-  ansible-playbook -i inventory/vflorio.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-1.intranet.vflorio.com local_project_dir=/mnt/z/Personal/homelab/apps/traefik/traefik-prod-1/ remote_project_dir=~/docker/traefik" 
+  ansible-playbook -i inventory/main.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-1.intranet.vflorio.com local_project_dir=/mnt/z/Personal/homelab/apps/traefik/traefik-prod-1/ remote_project_dir=~/docker/traefik" 
   
   # portainer-agent
-  ansible-playbook -i inventory/vflorio.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-1.intranet.vflorio.com local_project_dir=/mnt/z/Personal/homelab/apps/portainer/portainer-agent-prod-1/ remote_project_dir=~/docker/portainer-agent" 
+  ansible-playbook -i inventory/main.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-1.intranet.vflorio.com local_project_dir=/mnt/z/Personal/homelab/apps/portainer/portainer-agent-prod-1/ remote_project_dir=~/docker/portainer-agent" 
   
   # gitea
-  ansible-playbook -i inventory/vflorio.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-1.intranet.vflorio.com local_project_dir=/mnt/z/Personal/homelab/apps/gitea/gitea-prod-1/ remote_project_dir=~/docker/gitea" 
+  ansible-playbook -i inventory/main.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-1.intranet.vflorio.com local_project_dir=/mnt/z/Personal/homelab/apps/gitea/gitea-prod-1/ remote_project_dir=~/docker/gitea" 
   
   # container-registry
-  ansible-playbook -i inventory/vflorio.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-1.intranet.vflorio.com local_project_dir=/mnt/z/Personal/homelab/apps/container-registry/container-registry-prod-1/ remote_project_dir=~/docker/container-registry" 
+  ansible-playbook -i inventory/main.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-1.intranet.vflorio.com local_project_dir=/mnt/z/Personal/homelab/apps/container-registry/container-registry-prod-1/ remote_project_dir=~/docker/container-registry" 
   
   # verdaccio
-  ansible-playbook -i inventory/vflorio.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-1.intranet.vflorio.com local_project_dir=/mnt/z/Personal/homelab/apps/verdaccio/verdaccio-prod-1/ remote_project_dir=~/docker/verdaccio" 
+  ansible-playbook -i inventory/main.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-1.intranet.vflorio.com local_project_dir=/mnt/z/Personal/homelab/apps/verdaccio/verdaccio-prod-1/ remote_project_dir=~/docker/verdaccio" 
   
   # nextcloud
-  ansible-playbook -i inventory/vflorio.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-1.intranet.vflorio.com local_project_dir=/mnt/z/Personal/homelab/apps/nextcloud/nextcloud-prod-1/ remote_project_dir=~/docker/nextcloud" 
+  ansible-playbook -i inventory/main.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-1.intranet.vflorio.com local_project_dir=/mnt/z/Personal/homelab/apps/nextcloud/nextcloud-prod-1/ remote_project_dir=~/docker/nextcloud" 
   
   # penpot
-  ansible-playbook -i inventory/vflorio.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-1.intranet.vflorio.com local_project_dir=/mnt/z/Personal/homelab/apps/penpot/penpot-prod-1/ remote_project_dir=~/docker/penpot" 
+  ansible-playbook -i inventory/main.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-1.intranet.vflorio.com local_project_dir=/mnt/z/Personal/homelab/apps/penpot/penpot-prod-1/ remote_project_dir=~/docker/penpot" 
   
   # vaultwarden
-  ansible-playbook -i inventory/vflorio.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-1.intranet.vflorio.com local_project_dir=/mnt/z/Personal/homelab/apps/vaultwarden/vaultwarden-prod-1/ remote_project_dir=~/docker/vaultwarden" 
+  ansible-playbook -i inventory/main.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-1.intranet.vflorio.com local_project_dir=/mnt/z/Personal/homelab/apps/vaultwarden/vaultwarden-prod-1/ remote_project_dir=~/docker/vaultwarden" 
 
   # drawio
-  ansible-playbook -i inventory/vflorio.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-1.intranet.vflorio.com local_project_dir=/mnt/z/Personal/homelab/apps/drawio/drawio-prod-1/ remote_project_dir=~/docker/drawio" 
+  ansible-playbook -i inventory/main.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-1.intranet.vflorio.com local_project_dir=/mnt/z/Personal/homelab/apps/drawio/drawio-prod-1/ remote_project_dir=~/docker/drawio" 
 
   # passbolt
-  ansible-playbook -i inventory/vflorio.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-1.intranet.vflorio.com local_project_dir=/mnt/z/Personal/homelab/apps/passbolt/passbolt-prod-1/ remote_project_dir=~/docker/passbolt" 
+  ansible-playbook -i inventory/main.ini playbooks/update-dockerdeploy.yml -e "ansible_user=vflorio hosts=srv-prod-1.intranet.vflorio.com local_project_dir=/mnt/z/Personal/homelab/apps/passbolt/passbolt-prod-1/ remote_project_dir=~/docker/passbolt" 
 
 # ??
 docker-compose exec passbolt su -m -c "/usr/share/php/passbolt/bin/cake \
