@@ -196,7 +196,6 @@ volumes:
 - [ ] **Passbolt** - Password manager
 - [ ] **Code Server** - VS Code nel browser
 - [ ] **Nextcloud** - Cloud storage e collaboration
-- [ ] **Penpot** - Design collaboration tool
 - [ ] **Excalidraw** - TODO: Desc
 - [ ] **OnlyOffice** - Suite ufficio online
 - [ ] **Portainer Agent** - Agent per gestione remota

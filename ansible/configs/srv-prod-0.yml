@@ -1,0 +1,18 @@
+# Configurazione server srv-prod-0
+# Server: srv-prod-0.intranet.vflorio.com
+# Descrizione: Management Server - Servizi di gestione e infrastruttura
+
+apps:
+  # Base components
+  - traefik
+  - authentik
+  - prometheus
+  
+  # Management tools
+  - portainer  
+  - semaphore
+  
+  # Infrastructure services  
+  - pihole
+  - tailscale
+  - grafana

@@ -1,0 +1,31 @@
+# Configurazione server srv-prod-1  
+# Server: srv-prod-1.intranet.vflorio.com
+# Descrizione: User Applications Server - Applicazioni utente e servizi
+
+apps:
+  # Base components (shared)
+  - traefik
+  - authentik-outpost
+  
+  # Management
+  - portainer-agent
+  
+  # Development tools
+  - gitea
+  - container-registry
+  - verdaccio
+  - code-server
+  
+  # Productivity & Office
+  - nextcloud
+  - onlyoffice
+  - excalidraw
+  - penpot
+  - drawio
+  
+  # Security & Password Management
+  - passbolt
+  - vaultwarden
+  
+  # Media & Entertainment
+  - jellyfin

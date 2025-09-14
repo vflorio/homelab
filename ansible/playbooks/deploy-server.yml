@@ -1,0 +1,23 @@
+---
+- hosts: "{{ target_server }}"
+  gather_facts: true
+  vars:
+    ansible_user: "{{ deploy_user | default('vflorio') }}"
+    project_base_dir: "/mnt/c/Data/homelab/next/apps"
+    
+  tasks:
+    - name: Include server configuration
+      include_vars: "configs/{{ target_server }}.yml"
+      
+    - name: Deploy applications in order
+      include_tasks: tasks/deploy-single-app.yml
+      vars:
+        app_name: "{{ item }}"
+        app_local_dir: "{{ project_base_dir }}/{{ item }}/{{ item }}-{{ target_server.split('-')[-1] | default('prod-1') }}/"
+        app_remote_dir: "~/docker/{{ item }}"
+      loop: "{{ apps }}"
+      when: apps is defined
+      
+    - name: Display deployment summary
+      debug:
+        msg: "Deployment completed for {{ target_server }} with {{ apps | length }} applications"

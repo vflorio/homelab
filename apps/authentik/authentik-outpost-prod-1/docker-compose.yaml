@@ -1,15 +1,26 @@
----
-networks:
-  backend:
-    external: true
+version: '3.8'
+
 services:
-  authentik_proxy:
-    image: ghcr.io/goauthentik/proxy
+  authentik-proxy:
+    image: ghcr.io/goauthentik/proxy:latest
     container_name: authentik-outpost-prod-1
-    environment:
-      - AUTHENTIK_HOST=https://authentik-prod-1.kube-prod-1.home.clcreative.de
-      - AUTHENTIK_INSECURE=false
-      - AUTHENTIK_TOKEN=${AUTHENTIK_TOKEN}
-    networks:
-      - backend
     restart: unless-stopped
+    environment:
+      - AUTHENTIK_HOST=${AUTHENTIK_HOST}
+      - AUTHENTIK_INSECURE=${AUTHENTIK_INSECURE}
+      - AUTHENTIK_TOKEN=${AUTHENTIK_TOKEN}
+      - AUTHENTIK_LOG_LEVEL=${AUTHENTIK_LOG_LEVEL}
+    ports:
+      - "9000:9000"
+      - "9443:9443"
+    networks:
+      - homelab
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.authentik-outpost.rule=Host(`outpost.srv-prod-1.intranet.vflorio.com`)"
+      - "traefik.http.routers.authentik-outpost.entrypoints=web"
+      - "traefik.http.services.authentik-outpost.loadbalancer.server.port=9000"
+
+networks:
+  homelab:
+    external: true

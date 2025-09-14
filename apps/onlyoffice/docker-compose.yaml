@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  onlyoffice:
+    image: onlyoffice/documentserver:latest
+    container_name: onlyoffice
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./data:/var/www/onlyoffice/Data
+      - ./logs:/var/log/onlyoffice
+    environment:
+      - JWT_ENABLED=true
+      - JWT_SECRET=${ONLYOFFICE_JWT_SECRET:-change-this-secret}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.onlyoffice.rule=Host(`office.srv-prod-1.intranet.vflorio.com`)"
+      - "traefik.http.routers.onlyoffice.entrypoints=web"
+      - "traefik.http.services.onlyoffice.loadbalancer.server.port=80"
+    networks:
+      - homelab
+
+networks:
+  homelab:
+    external: true
