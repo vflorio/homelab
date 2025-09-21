@@ -1,0 +1,366 @@
+###########################################################################
+# HomeLab Gateway/Security Server
+# Tier 1: Sicurezza, TLS, Accesso Remoto, Autenticazione
+# IP: 192.168.1.190 (srv-gateway.intranet.vflorio.com)
+###########################################################################
+
+networks:
+  gateway:
+    name: gateway
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+      - subnet: ${DOCKER_SUBNET_GATEWAY:?err}
+        gateway: ${DOCKER_GATEWAY_GATEWAY:?err}
+
+###########################################################################
+# CORE SERVICES
+###########################################################################
+
+services:
+
+###########################################################################
+# Portainer - Container Management
+###########################################################################
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${FOLDER_FOR_DATA:?err}/portainer:/data
+    ports:
+      - ${WEBUI_PORT_PORTAINER:?err}:9000
+    networks:
+      - gateway
+    labels:
+      - traefik.enable=true
+    # ROUTERS
+      - traefik.http.routers.portainer.service=portainer
+      - traefik.http.routers.portainer.rule=Host(`portainer.${CLOUDFLARE_DNS_ZONE:?err}`)
+      - traefik.http.routers.portainer.entrypoints=secureweb
+      - traefik.http.routers.portainer.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
+    # SERVICES
+      - traefik.http.services.portainer.loadbalancer.server.scheme=http
+      - traefik.http.services.portainer.loadbalancer.server.port=9000
+    # MIDDLEWARES
+
+
+###########################################################################
+# Traefik - Reverse Proxy & TLS Management
+###########################################################################
+  traefik:
+    image: traefik:latest
+    container_name: traefik
+    restart: unless-stopped
+    networks:
+      - gateway
+    user: root
+    environment:
+      - TZ=${TIMEZONE:?err}
+      - CF_DNS_API_TOKEN=${CLOUDFLARE_DNS_API_TOKEN:?err}
+    ports:
+      - ${REVERSE_PROXY_PORT_HTTP:?err}:80
+      - ${REVERSE_PROXY_PORT_HTTPS:?err}:443
+      - ${WEBUI_PORT_TRAEFIK:?err}:8080
+      - ${METRICS_PORT_TRAEFIK:?err}:8082
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${FOLDER_FOR_DATA:?err}/logs/traefik:/var/log
+      - ${FOLDER_FOR_DATA:?err}/traefik:/etc/traefik
+      - ${FOLDER_FOR_DATA:?err}/traefik/letsencrypt:/letsencrypt
+    labels:
+      - traefik.enable=true
+    # ROUTERS
+      - traefik.http.routers.traefik.service=api@internal
+      - traefik.http.routers.traefik.rule=Host(`traefik.${CLOUDFLARE_DNS_ZONE:?err}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))
+      - traefik.http.routers.traefik.entrypoints=secureweb
+      - traefik.http.routers.traefik.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
+    # SERVICES
+      - traefik.http.services.traefik.loadbalancer.server.scheme=http
+      - traefik.http.services.traefik.loadbalancer.server.port=8080
+    # MIDDLEWARES
+
+  traefik-certs-dumper:
+    image: ldez/traefik-certs-dumper:latest
+    container_name: traefik-certs-dumper
+    restart: always
+    networks:
+      - gateway
+    user: ${PUID:?err}:${PGID:?err}
+    entrypoint: sh -c '
+      while ! [ -e /data/acme.json ]
+      || ! [ `jq ".[] | .Certificates | length" /data/acme.json | jq -s "add" ` != 0 ]; do
+      sleep 1
+      ; done
+      && traefik-certs-dumper file --version v2 --watch
+      --source /data/acme.json --dest /certs'
+    volumes:
+      - ${FOLDER_FOR_DATA:?err}/traefik/letsencrypt:/data:ro
+      - ${FOLDER_FOR_DATA:?err}/traefik-certs-dumper:/certs
+
+###########################################################################
+# PostgreSQL - Shared Database
+###########################################################################
+  postgresql:
+    image: docker.io/library/postgres:latest
+    container_name: postgresql
+    restart: unless-stopped
+    networks:
+      - gateway
+    user: ${PUID:?err}:${PGID:?err}
+    ports:
+      - ${POSTGRESQL_PORT:?err}:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 5s
+    volumes:
+      - ${FOLDER_FOR_DATA:?err}/postgresql:/var/lib/postgresql/data
+    environment:
+      - TZ=${TIMEZONE:?err}
+      - POSTGRES_DB=${AUTHENTIK_DATABASE:?err}
+      - POSTGRES_USER=${POSTGRESQL_USERNAME:?err}
+      - POSTGRES_PASSWORD=${POSTGRESQL_PASSWORD:?err}
+
+###########################################################################
+# Valkey - Redis Cache
+###########################################################################
+  valkey:
+    image: valkey/valkey:alpine
+    container_name: valkey
+    command: --save 60 1 --loglevel warning
+    restart: unless-stopped
+    networks:
+      - gateway
+    user: ${PUID:?err}:${PGID:?err}
+    ports:
+      - ${VALKEY_PORT:?err}:6379
+    healthcheck:
+      test: ["CMD-SHELL", "valkey-cli ping | grep PONG"]
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 3s
+    volumes:
+      - ${FOLDER_FOR_DATA:?err}/valkey:/data
+
+###########################################################################
+# Authentik - Authentication & SSO
+###########################################################################
+  authentik:
+    image: ghcr.io/goauthentik/server:${AUTHENTIK_VERSION:?err}
+    container_name: authentik
+    restart: unless-stopped
+    networks:
+      - gateway
+    user: ${PUID:?err}:${PGID:?err}
+    command: server
+    environment:
+      - TZ=${TIMEZONE:?err}
+      - AUTHENTIK_LOG_LEVEL=info # info, warning, error, debug and trace
+      - AUTHENTIK_SECRET_KEY=${AUTHENTIK_SECRET_KEY:?err}
+      - AUTHENTIK_REDIS__HOST=valkey
+      - AUTHENTIK_POSTGRESQL__HOST=postgresql
+      - AUTHENTIK_POSTGRESQL__NAME=${AUTHENTIK_DATABASE:?err}
+      - AUTHENTIK_POSTGRESQL__USER=${POSTGRESQL_USERNAME:?err}
+      - AUTHENTIK_POSTGRESQL__PASSWORD=${POSTGRESQL_PASSWORD:?err}
+      - AUTHENTIK_ERROR_REPORTING__ENABLED=${AUTHENTIK_ERROR_REPORTING__ENABLED:?err}
+      - AUTHENTIK_EMAIL__HOST=${EMAIL_SERVER_HOST}
+      - AUTHENTIK_EMAIL__PORT=${EMAIL_SERVER_PORT}
+      - AUTHENTIK_EMAIL__USERNAME=${EMAIL_ADDRESS}
+      - AUTHENTIK_EMAIL__PASSWORD=${EMAIL_PASSWORD}
+      - AUTHENTIK_EMAIL__USE_TLS=${EMAIL_TLS}
+      - AUTHENTIK_EMAIL__USE_SSL=${EMAIL_SSL}
+      - AUTHENTIK_EMAIL__FROM=${EMAIL_SENDER}
+      - AUTHENTIK_EMAIL__TIMEOUT=10
+    volumes:
+      - ${FOLDER_FOR_DATA:?err}/authentik/media:/media
+      - ${FOLDER_FOR_DATA:?err}/authentik/templates:/templates
+    ports:
+      - ${WEBUI_PORT_AUTHENTIK:?err}:9000
+    depends_on:
+      postgresql:
+        condition: service_healthy
+        restart: true
+      valkey:
+        condition: service_healthy
+        restart: true
+    labels:
+      - traefik.enable=true
+    # ROUTERS
+      - traefik.http.routers.authentik.service=authentik
+      - traefik.http.routers.authentik.rule=Host(`auth.${CLOUDFLARE_DNS_ZONE:?err}`)
+      - traefik.http.routers.authentik.entrypoints=secureweb
+      - traefik.http.routers.authentik.middlewares=security-headers@file,traefik-bouncer@file
+      # Do not add authentik-forwardauth@file to middlewares, otherwise other applications can't authenticate
+    # SERVICES
+      - traefik.http.services.authentik.loadbalancer.server.scheme=http
+      - traefik.http.services.authentik.loadbalancer.server.port=9000
+    # MIDDLEWARES
+
+  authentic-worker:
+    image: ghcr.io/goauthentik/server:${AUTHENTIK_VERSION:?err}
+    container_name: authentik-worker
+    restart: unless-stopped
+    networks:
+      - gateway
+    user: ${PUID:?err}:${PGID:?err}
+    command: worker
+    environment:
+      - TZ=${TIMEZONE:?err}
+      - AUTHENTIK_SECRET_KEY=${AUTHENTIK_SECRET_KEY:?err}
+      - AUTHENTIK_REDIS__HOST=valkey
+      - AUTHENTIK_POSTGRESQL__HOST=postgresql
+      - AUTHENTIK_POSTGRESQL__NAME=${AUTHENTIK_DATABASE:?err}
+      - AUTHENTIK_POSTGRESQL__USER=${POSTGRESQL_USERNAME:?err}
+      - AUTHENTIK_POSTGRESQL__PASSWORD=${POSTGRESQL_PASSWORD:?err}
+      - AUTHENTIK_ERROR_REPORTING__ENABLED=${AUTHENTIK_ERROR_REPORTING__ENABLED:?err}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${FOLDER_FOR_DATA:?err}/authentik/certs:/certs
+      - ${FOLDER_FOR_DATA:?err}/authentik/media:/media
+      - ${FOLDER_FOR_DATA:?err}/authentik/templates:/templates
+    depends_on:
+      postgresql:
+        condition: service_healthy
+        restart: true
+      valkey:
+        condition: service_healthy
+        restart: true
+
+###########################################################################
+# CrowdSec - Security & Intrusion Detection
+###########################################################################
+  crowdsec:
+    image: crowdsecurity/crowdsec:latest
+    container_name: crowdsec
+    restart: always
+    networks:
+      - gateway
+    user: ${PUID:?err}:${PGID:?err}
+    environment:
+      - TZ=${TIMEZONE:?err}
+    ports:
+      - 127.0.0.1:${CROWDSEC_PORT:?err}:8080
+      - 6060:6060        # Provides Metrics for Prometheus
+      - 7422:7422        # Provides WAF AppSec
+    depends_on:
+      - traefik
+    volumes:
+      - ${FOLDER_FOR_DATA:?err}/crowdsec:/etc/crowdsec
+      - ${FOLDER_FOR_DATA:?err}/crowdsec/data:/var/lib/crowdsec/data/
+      - ${FOLDER_FOR_DATA:?err}/logs:/logs:ro
+
+###########################################################################
+# Headscale - Self-hosted VPN Control Server
+###########################################################################
+  headscale:
+    image: headscale/headscale:latest
+    container_name: headscale
+    restart: unless-stopped
+    networks:
+      - gateway
+    command: serve
+    ports:
+      - ${CONNECT_PORT_HEADSCALE:?err}:8080
+      - ${METRICS_PORT_HEADSCALE:?err}:9090
+    volumes:
+      - ${FOLDER_FOR_DATA:?err}/headscale:/etc/headscale
+      - ${FOLDER_FOR_DATA:?err}/headscale/data:/var/lib/headscale
+    environment:
+      - TZ=${TIMEZONE:?err}
+    labels:
+      - traefik.enable=true
+    # ROUTERS
+      - traefik.http.routers.headscale.service=headscale
+      - traefik.http.routers.headscale.rule=Host(`headscale.${CLOUDFLARE_DNS_ZONE:?err}`)
+      - traefik.http.routers.headscale.entrypoints=secureweb
+      - traefik.http.routers.headscale.middlewares=security-headers@file,traefik-bouncer@file
+      # Do not add authentik-forwardauth@file to middlewares, otherwise Tailscale clients can't authenticate and connect
+    # SERVICES
+      - traefik.http.services.headscale.loadbalancer.server.scheme=http
+      - traefik.http.services.headscale.loadbalancer.server.port=8080
+    # MIDDLEWARES
+
+###########################################################################
+# Headplane - Headscale Web UI
+###########################################################################
+  headplane:
+    image: ghcr.io/tale/headplane:latest
+    container_name: headplane
+    restart: unless-stopped
+    networks:
+      - gateway
+    ports:
+      - ${WEBUI_PORT_HEADPLANE:?err}:3000
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${FOLDER_FOR_DATA:?err}/headscale:/etc/headscale
+      - ${FOLDER_FOR_DATA:?err}/headplane:/etc/headplane
+      - ${FOLDER_FOR_DATA:?err}/headplane/data:/var/lib/headplane
+    environment:
+      - TZ=${TIMEZONE:?err}
+    labels:
+      - traefik.enable=true
+    # ROUTERS
+      - traefik.http.routers.headplane.service=headplane
+      - traefik.http.routers.headplane.rule=Host(`headplane.${CLOUDFLARE_DNS_ZONE:?err}`) && PathPrefix(`/admin/`)
+      - traefik.http.routers.headplane.entrypoints=secureweb
+      - traefik.http.routers.headplane.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
+    # SERVICES
+      - traefik.http.services.headplane.loadbalancer.server.scheme=http
+      - traefik.http.services.headplane.loadbalancer.server.port=3000
+    # MIDDLEWARES
+
+###########################################################################
+# DDNS Updater - Dynamic DNS
+###########################################################################
+  ddns-updater:
+    image: qmcgaw/ddns-updater:latest
+    container_name: ddns-updater
+    restart: always
+    user: ${PUID:?err}:${PGID:?err}
+    volumes:
+      - ${FOLDER_FOR_DATA:?err}/ddns-updater:/updater/data
+    ports:
+      - ${WEBUI_PORT_DDNS_UPDATER:?err}:${WEBUI_PORT_DDNS_UPDATER:?err}/tcp
+    environment:
+      - UMASK=${UMASK:?err}
+      - TZ=${TIMEZONE:?err}
+      - CONFIG=
+      - PERIOD=5m
+      - UPDATE_COOLDOWN_PERIOD=5m
+      - PUBLICIP_FETCHERS=all
+      - PUBLICIP_HTTP_PROVIDERS=all
+      - PUBLICIPV4_HTTP_PROVIDERS=all
+      - PUBLICIPV6_HTTP_PROVIDERS=all
+      - PUBLICIP_DNS_PROVIDERS=all
+      - PUBLICIP_DNS_TIMEOUT=3s
+      - HTTP_TIMEOUT=10s
+      # Web UI
+      - LISTENING_ADDRESS=:${WEBUI_PORT_DDNS_UPDATER:?err}
+      - ROOT_URL=/
+      # Backup
+      - BACKUP_PERIOD=0 # 0 to disable
+      - BACKUP_DIRECTORY=/updater/data
+      # Other
+      - LOG_LEVEL=info
+      - LOG_CALLER=hidden
+      - SHOUTRRR_ADDRESSES=
+    networks:
+      - gateway
+    labels:
+      - traefik.enable=true
+    # ROUTERS
+      - traefik.http.routers.ddns-updater.service=ddns-updater
+      - traefik.http.routers.ddns-updater.rule=Host(`ddns-updater.${CLOUDFLARE_DNS_ZONE:?err}`)
+      - traefik.http.routers.ddns-updater.entrypoints=secureweb
+      - traefik.http.routers.ddns-updater.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
+    # SERVICES
+      - traefik.http.services.ddns-updater.loadbalancer.server.scheme=http
+      - traefik.http.services.ddns-updater.loadbalancer.server.port=${WEBUI_PORT_DDNS_UPDATER:?err}
+    # MIDDLEWARES

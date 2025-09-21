@@ -1,0 +1,31 @@
+ (srv-gateway)
+ 
+- Traefik (Reverse Proxy + TLS)
+- Authentik (Authentication)
+- Crowdsec (Security)
+- Headscale (VPN/Remote Access)
+- Tailscale (VPN Client)
+- DDNS Updater
+- Certificates Management
+
+ (srv-mgmt)
+
+- Portainer (Container Management)
+- Prometheus (Metrics)
+- Grafana (Dashboards)
+- Guacamole (Remote Desktop)
+- PostgreSQL (Shared Database)
+- Valkey/Redis (Cache)
+- Homepage/Heimdall/Homarr (Dashboards)
+
+(srv-media)
+
+- Jellyfin/Plex (Media Streaming)
+- Sonarr/Radarr/Lidarr/Readarr (Automation)
+- Prowlarr (Indexer Management)
+- qBittorrent/SABnzbd (Download)
+- Jellyseerr (Request Management)
+- Bazarr (Subtitles)
+- Tdarr (Transcoding)
+- Filebot/Unpackerr (Processing)
+- Flaresolverr (Cloudflare Bypass)
