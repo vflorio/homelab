@@ -7,7 +7,7 @@
 #
 #  i.e.   - main: vflorio.com
 #           sans:
-#             - "*.srv-demo-1.intranet.vflorio.com"
+#             - "*.vflorio.com"
 #
 #########################################################################
 #########################################################################
@@ -20,7 +20,7 @@ tls:
         domain:
           main: vflorio.com
           sans:
-            - "*.srv-demo-1.intranet.vflorio.com"
+            - "*.vflorio.com"
   options:
     default:
       minVersion: VersionTLS12
@@ -51,7 +51,7 @@ http:
           - PUT
         accessControlAllowOriginList:
           - https://vflorio.com
-          - https://*.srv-demo-1.intranet.vflorio.com
+          - https://*.vflorio.com
         accessControlMaxAge: 100
         addVaryHeader: true
         browserXssFilter: true

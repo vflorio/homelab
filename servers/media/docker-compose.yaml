@@ -1,7 +1,7 @@
 ###########################################################################
 # HomeLab Media Server
-# Tier 3: Download, Streaming, Automazione Media
-# IP: 192.168.1.192 (srv-media.intranet.vflorio.com)
+# Download, Streaming, Automazione Media
+# IP: 192.168.1.192 (media.intranet.vflorio.com)
 ###########################################################################
 
 networks:
@@ -11,26 +11,25 @@ networks:
     ipam:
       driver: default
       config:
-      - subnet: ${DOCKER_SUBNET_MEDIA:?err}
-        gateway: ${DOCKER_GATEWAY_MEDIA:?err}
+        - subnet: ${DOCKER_SUBNET:?err}
+          gateway: ${DOCKER_GATEWAY:?err}
 
 ###########################################################################
 # MEDIA STREAMING SERVICES
 ###########################################################################
 
 services:
-
-###########################################################################
-# Jellyfin - Media Streaming Server
-###########################################################################
+  ###########################################################################
+  # Jellyfin - Media Streaming Server
+  ###########################################################################
   jellyfin:
     image: lscr.io/linuxserver/jellyfin:latest
     container_name: jellyfin
     restart: unless-stopped
-# Add Configurations for GPU Hardware Rendering Here:
-#    devices:
-#      - /dev/dri/renderD128:/dev/dri/renderD128
-#      - /dev/dri/card0:/dev/dri/card0
+    # Add Configurations for GPU Hardware Rendering Here:
+    #    devices:
+    #      - /dev/dri/renderD128:/dev/dri/renderD128
+    #      - /dev/dri/card0:/dev/dri/card0
     volumes:
       - ${FOLDER_FOR_MEDIA:?err}/media:/data/media
       - ${FOLDER_FOR_DATA:?err}/jellyfin:/config
@@ -39,30 +38,32 @@ services:
       - PGID=${PGID:?err}
       - UMASK=${UMASK:?err}
       - TZ=${TIMEZONE:?err}
-#      - JELLYFIN_PublishedServerUrl=${LOCAL_DOCKER_IP:?err}  # Enable for DLNA - Only works on HOST Network Mode
+    #      - JELLYFIN_PublishedServerUrl=${LOCAL_DOCKER_IP:?err}  # Enable for DLNA - Only works on HOST Network Mode
     networks:
-      - mediastack
+      - media
+    ports:
+      - ${WEBUI_PORT_JELLYFIN:?err}:8096
     labels:
       - traefik.enable=true
-    # ROUTERS
+      # ROUTERS
       - traefik.http.routers.jellyfin.service=jellyfin
       - traefik.http.routers.jellyfin.rule=Host(`jellyfin.${CLOUDFLARE_DNS_ZONE:?err}`)
       - traefik.http.routers.jellyfin.entrypoints=secureweb
       - traefik.http.routers.jellyfin.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-    # SERVICES
+      # SERVICES
       - traefik.http.services.jellyfin.loadbalancer.server.scheme=http
       - traefik.http.services.jellyfin.loadbalancer.server.port=8096
     # MIDDLEWARES
 
-###########################################################################
-# Jellyseerr - Media Request Management
-###########################################################################
+  ###########################################################################
+  # Jellyseerr - Media Request Management
+  ###########################################################################
   jellyseerr:
     image: fallenbagel/jellyseerr:latest
     container_name: jellyseerr
     restart: unless-stopped
     networks:
-      - mediastack
+      - media
     volumes:
       - ${FOLDER_FOR_DATA:?err}/jellyseerr:/app/config
     environment:
@@ -70,25 +71,27 @@ services:
       - PGID=${PGID:?err}
       - UMASK=${UMASK:?err}
       - TZ=${TIMEZONE:?err}
+    ports:
+      - ${WEBUI_PORT_JELLYSEERR:?err}:5055
     labels:
       - traefik.enable=true
-    # ROUTERS
+      # ROUTERS
       - traefik.http.routers.jellyseerr.service=jellyseerr
       - traefik.http.routers.jellyseerr.rule=Host(`jellyseerr.${CLOUDFLARE_DNS_ZONE:?err}`)
       - traefik.http.routers.jellyseerr.entrypoints=secureweb
       - traefik.http.routers.jellyseerr.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-    # SERVICES
+      # SERVICES
       - traefik.http.services.jellyseerr.loadbalancer.server.scheme=http
       - traefik.http.services.jellyseerr.loadbalancer.server.port=5055
     # MIDDLEWARES
 
-###########################################################################
-# DOWNLOAD SERVICES
-###########################################################################
+  ###########################################################################
+  # DOWNLOAD SERVICES
+  ###########################################################################
 
-###########################################################################
-# qBittorrent - Torrent Client
-###########################################################################
+  ###########################################################################
+  # qBittorrent - Torrent Client
+  ###########################################################################
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
@@ -105,7 +108,7 @@ services:
       - DOCKER_MODS=ghcr.io/themepark-dev/theme.park:qbittorrent
       - TP_THEME=${TP_THEME:?err}
     networks:
-      - mediastack
+      - media
     labels:
       - traefik.enable=true
     # ROUTERS
@@ -118,9 +121,9 @@ services:
       - traefik.http.services.qbittorrent.loadbalancer.server.port=${WEBUI_PORT_QBITTORRENT:?err}
     # MIDDLEWARES
 
-###########################################################################
-# SABnzbd - Usenet Client
-###########################################################################
+  ###########################################################################
+  # SABnzbd - Usenet Client
+  ###########################################################################
   sabnzbd:
     image: lscr.io/linuxserver/sabnzbd:latest
     container_name: sabnzbd
@@ -135,26 +138,28 @@ services:
       - DOCKER_MODS=ghcr.io/themepark-dev/theme.park:sabnzbd
       - TP_THEME=${TP_THEME:?err}
     networks:
-      - mediastack
+      - media
+    ports:
+      - ${WEBUI_PORT_SABNZBD:?err}:8080
     labels:
       - traefik.enable=true
-    # ROUTERS
+      # ROUTERS
       - traefik.http.routers.sabnzbd.service=sabnzbd
       - traefik.http.routers.sabnzbd.rule=Host(`sabnzbd.${CLOUDFLARE_DNS_ZONE:?err}`)
       - traefik.http.routers.sabnzbd.entrypoints=secureweb
       - traefik.http.routers.sabnzbd.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-    # SERVICES
+      # SERVICES
       - traefik.http.services.sabnzbd.loadbalancer.server.scheme=http
       - traefik.http.services.sabnzbd.loadbalancer.server.port=8080
     # MIDDLEWARES
 
-###########################################################################
-# AUTOMATION SERVICES (STARR APPS)
-###########################################################################
+  ###########################################################################
+  # AUTOMATION SERVICES (STARR APPS)
+  ###########################################################################
 
-###########################################################################
-# Prowlarr - Indexer Management
-###########################################################################
+  ###########################################################################
+  # Prowlarr - Indexer Management
+  ###########################################################################
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:develop
     container_name: prowlarr
@@ -168,22 +173,24 @@ services:
       - DOCKER_MODS=ghcr.io/themepark-dev/theme.park:prowlarr
       - TP_THEME=${TP_THEME:?err}
     networks:
-      - mediastack
+      - media
+    ports:
+      - ${WEBUI_PORT_PROWLARR:?err}:9696
     labels:
       - traefik.enable=true
-    # ROUTERS
+      # ROUTERS
       - traefik.http.routers.prowlarr.service=prowlarr
       - traefik.http.routers.prowlarr.rule=Host(`prowlarr.${CLOUDFLARE_DNS_ZONE:?err}`)
       - traefik.http.routers.prowlarr.entrypoints=secureweb
       - traefik.http.routers.prowlarr.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-    # SERVICES
+      # SERVICES
       - traefik.http.services.prowlarr.loadbalancer.server.scheme=http
       - traefik.http.services.prowlarr.loadbalancer.server.port=9696
     # MIDDLEWARES
 
-###########################################################################
-# Sonarr - TV Shows Management
-###########################################################################
+  ###########################################################################
+  # Sonarr - TV Shows Management
+  ###########################################################################
   sonarr:
     image: lscr.io/linuxserver/sonarr:latest
     container_name: sonarr
@@ -198,22 +205,24 @@ services:
       - DOCKER_MODS=ghcr.io/themepark-dev/theme.park:sonarr
       - TP_THEME=${TP_THEME:?err}
     networks:
-      - mediastack
+      - media
+    ports:
+      - ${WEBUI_PORT_SONARR:?err}:8989
     labels:
       - traefik.enable=true
-    # ROUTERS
+      # ROUTERS
       - traefik.http.routers.sonarr.service=sonarr
       - traefik.http.routers.sonarr.rule=Host(`sonarr.${CLOUDFLARE_DNS_ZONE:?err}`)
       - traefik.http.routers.sonarr.entrypoints=secureweb
       - traefik.http.routers.sonarr.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-    # SERVICES
+      # SERVICES
       - traefik.http.services.sonarr.loadbalancer.server.scheme=http
       - traefik.http.services.sonarr.loadbalancer.server.port=8989
     # MIDDLEWARES
 
-###########################################################################
-# Radarr - Movies Management
-###########################################################################
+  ###########################################################################
+  # Radarr - Movies Management
+  ###########################################################################
   radarr:
     image: lscr.io/linuxserver/radarr:latest
     container_name: radarr
@@ -228,22 +237,24 @@ services:
       - DOCKER_MODS=ghcr.io/themepark-dev/theme.park:radarr
       - TP_THEME=${TP_THEME:?err}
     networks:
-      - mediastack
+      - media
+    ports:
+      - ${WEBUI_PORT_RADARR:?err}:7878
     labels:
       - traefik.enable=true
-    # ROUTERS
+      # ROUTERS
       - traefik.http.routers.radarr.service=radarr
       - traefik.http.routers.radarr.rule=Host(`radarr.${CLOUDFLARE_DNS_ZONE:?err}`)
       - traefik.http.routers.radarr.entrypoints=secureweb
       - traefik.http.routers.radarr.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-    # SERVICES
+      # SERVICES
       - traefik.http.services.radarr.loadbalancer.server.scheme=http
       - traefik.http.services.radarr.loadbalancer.server.port=7878
     # MIDDLEWARES
 
-###########################################################################
-# Lidarr - Music Management
-###########################################################################
+  ###########################################################################
+  # Lidarr - Music Management
+  ###########################################################################
   lidarr:
     image: lscr.io/linuxserver/lidarr:latest
     container_name: lidarr
@@ -258,22 +269,24 @@ services:
       - DOCKER_MODS=ghcr.io/themepark-dev/theme.park:lidarr
       - TP_THEME=${TP_THEME:?err}
     networks:
-      - mediastack
+      - media
+    ports:
+      - ${WEBUI_PORT_LIDARR:?err}:8686
     labels:
       - traefik.enable=true
-    # ROUTERS
+      # ROUTERS
       - traefik.http.routers.lidarr.service=lidarr
       - traefik.http.routers.lidarr.rule=Host(`lidarr.${CLOUDFLARE_DNS_ZONE:?err}`)
       - traefik.http.routers.lidarr.entrypoints=secureweb
       - traefik.http.routers.lidarr.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-    # SERVICES
+      # SERVICES
       - traefik.http.services.lidarr.loadbalancer.server.scheme=http
       - traefik.http.services.lidarr.loadbalancer.server.port=8686
     # MIDDLEWARES
 
-###########################################################################
-# Readarr - Books Management
-###########################################################################
+  ###########################################################################
+  # Readarr - Books Management
+  ###########################################################################
   readarr:
     image: lscr.io/linuxserver/readarr:0.4.18-develop
     container_name: readarr
@@ -288,22 +301,24 @@ services:
       - DOCKER_MODS=ghcr.io/themepark-dev/theme.park:readarr
       - TP_THEME=${TP_THEME:?err}
     networks:
-      - mediastack
+      - media
+    ports:
+      - ${WEBUI_PORT_READARR:?err}:8787
     labels:
       - traefik.enable=true
-    # ROUTERS
+      # ROUTERS
       - traefik.http.routers.readarr.service=readarr
       - traefik.http.routers.readarr.rule=Host(`readarr.${CLOUDFLARE_DNS_ZONE:?err}`)
       - traefik.http.routers.readarr.entrypoints=secureweb
       - traefik.http.routers.readarr.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-    # SERVICES
+      # SERVICES
       - traefik.http.services.readarr.loadbalancer.server.scheme=http
       - traefik.http.services.readarr.loadbalancer.server.port=8787
     # MIDDLEWARES
 
-###########################################################################
-# Bazarr - Subtitles Management
-###########################################################################
+  ###########################################################################
+  # Bazarr - Subtitles Management
+  ###########################################################################
   bazarr:
     image: lscr.io/linuxserver/bazarr:latest
     container_name: bazarr
@@ -317,27 +332,29 @@ services:
       - TZ=${TIMEZONE:?err}
       - DOCKER_MODS=ghcr.io/themepark-dev/theme.park:bazarr
       - TP_THEME=${TP_THEME:?err}
+    ports:
+      - ${WEBUI_PORT_BAZARR:?err}:6767
     networks:
-      - mediastack
+      - media
     labels:
       - traefik.enable=true
-    # ROUTERS
+      # ROUTERS
       - traefik.http.routers.bazarr.service=bazarr
       - traefik.http.routers.bazarr.rule=Host(`bazarr.${CLOUDFLARE_DNS_ZONE:?err}`)
       - traefik.http.routers.bazarr.entrypoints=secureweb
       - traefik.http.routers.bazarr.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-    # SERVICES
+      # SERVICES
       - traefik.http.services.bazarr.loadbalancer.server.scheme=http
       - traefik.http.services.bazarr.loadbalancer.server.port=6767
     # MIDDLEWARES
 
-###########################################################################
-# UTILITY SERVICES
-###########################################################################
+  ###########################################################################
+  # UTILITY SERVICES
+  ###########################################################################
 
-###########################################################################
-# Flaresolverr - Cloudflare Bypass
-###########################################################################
+  ###########################################################################
+  # Flaresolverr - Cloudflare Bypass
+  ###########################################################################
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
     container_name: flaresolverr
@@ -348,22 +365,24 @@ services:
       - CAPTCHA_SOLVER=none
       - TZ=${TIMEZONE:?err}
     networks:
-      - mediastack
+      - media
+    ports:
+      - ${WEBUI_PORT_FLARESOLVERR:?err}:8191
     labels:
       - traefik.enable=true
-    # ROUTERS
+      # ROUTERS
       - traefik.http.routers.flaresolverr.service=flaresolverr
       - traefik.http.routers.flaresolverr.rule=Host(`flaresolverr.${CLOUDFLARE_DNS_ZONE:?err}`)
       - traefik.http.routers.flaresolverr.entrypoints=secureweb
       - traefik.http.routers.flaresolverr.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-    # SERVICES
+      # SERVICES
       - traefik.http.services.flaresolverr.loadbalancer.server.scheme=http
       - traefik.http.services.flaresolverr.loadbalancer.server.port=8191
     # MIDDLEWARES
 
-###########################################################################
-# Unpackerr - Extraction Service
-###########################################################################
+  ###########################################################################
+  # Unpackerr - Extraction Service
+  ###########################################################################
   unpackerr:
     image: golift/unpackerr
     container_name: unpackerr
@@ -374,14 +393,14 @@ services:
       - ${FOLDER_FOR_DATA:?err}/unpackerr:/config
       - ${FOLDER_FOR_DATA:?err}/logs/unpackerr:/var/log
     networks:
-      - mediastack
+      - media
     ports:
       - ${METRICS_PORT_UNPACKERR:?err}:5656
     environment:
       - UMASK=${UMASK:?err}
       - TZ=${TIMEZONE:?err}
-    # Remove all lines that begin with UN_CMDHOOK, UN_WEBHOOK, UN_FOLDER, UN_WEBSERVER, and other apps you do not use.
-    ## Global Settings
+      # Remove all lines that begin with UN_CMDHOOK, UN_WEBHOOK, UN_FOLDER, UN_WEBSERVER, and other apps you do not use.
+      ## Global Settings
       - UN_DEBUG=false
       - UN_QUIET=false
       - UN_ERROR_STDERR=false
@@ -510,9 +529,9 @@ services:
       - UN_CMDHOOK_0_EXCLUDE_1=lidarr
       - UN_CMDHOOK_0_TIMEOUT=10s
 
-###########################################################################
-# Filebot - Media File Processor
-###########################################################################
+  ###########################################################################
+  # Filebot - Media File Processor
+  ###########################################################################
   filebot:
     image: rednoah/filebot:xpra
     container_name: filebot
@@ -521,29 +540,31 @@ services:
       - ${FOLDER_FOR_MEDIA:?err}/filebot:/filebot
       - ${FOLDER_FOR_DATA:?err}/filebot:/data/filebot
     environment:
-#      - XPRA_AUTH=password:value=YOUR_PASSWORD
+      #      - XPRA_AUTH=password:value=YOUR_PASSWORD
       - PUID=${PUID:?err}
       - PGID=${PGID:?err}
       - UMASK=${UMASK:?err}
       - TZ=${TIMEZONE:?err}
       - DARK_MODE=1
+    ports:
+      - ${WEBUI_PORT_FILEBOT:?err}:5454
     networks:
-      - mediastack
+      - media
     labels:
       - traefik.enable=true
-    # ROUTERS
+      # ROUTERS
       - traefik.http.routers.filebot.service=filebot
       - traefik.http.routers.filebot.rule=Host(`filebot.${CLOUDFLARE_DNS_ZONE:?err}`)
       - traefik.http.routers.filebot.entrypoints=secureweb
       - traefik.http.routers.filebot.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-    # SERVICES
+      # SERVICES
       - traefik.http.services.filebot.loadbalancer.server.scheme=http
       - traefik.http.services.filebot.loadbalancer.server.port=5454
     # MIDDLEWARES
 
-###########################################################################
-# Tdarr - Video Transcoding
-###########################################################################
+  ###########################################################################
+  # Tdarr - Video Transcoding
+  ###########################################################################
   tdarr:
     image: ghcr.io/haveagitgat/tdarr:latest
     container_name: tdarr
@@ -565,15 +586,99 @@ services:
       - internalNode=true
       - nodeID=Tdarr_Server
     networks:
-      - mediastack
+      - media
     labels:
       - traefik.enable=true
-    # ROUTERS
+      # ROUTERS
       - traefik.http.routers.tdarr.service=tdarr
       - traefik.http.routers.tdarr.rule=Host(`tdarr.${CLOUDFLARE_DNS_ZONE:?err}`)
       - traefik.http.routers.tdarr.entrypoints=secureweb
       - traefik.http.routers.tdarr.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-    # SERVICES
+      # SERVICES
       - traefik.http.services.tdarr.loadbalancer.server.scheme=http
       - traefik.http.services.tdarr.loadbalancer.server.port=${WEBUI_PORT_TDARR:?err}
     # MIDDLEWARES
+
+  ###########################################################################
+  # Huntarr - Automated Search Tool
+  ###########################################################################
+  huntarr:
+    image: huntarr/huntarr:latest
+    container_name: huntarr
+    volumes:
+      - ${FOLDER_FOR_DATA:?err}/huntarr:/config
+    environment:
+      - PUID=${PUID:?err}
+      - PGID=${PGID:?err}
+      - TZ=${TIMEZONE:?err}
+    networks:
+      - media
+    ports:
+      - ${WEBUI_PORT_HUNTARR:?err}:9705
+    labels:
+      - traefik.enable=true
+      # ROUTERS
+      - traefik.http.routers.huntarr.service=huntarr
+      - traefik.http.routers.huntarr.rule=Host(`huntarr.${CLOUDFLARE_DNS_ZONE:?err}`)
+      - traefik.http.routers.huntarr.entrypoints=secureweb
+      - traefik.http.routers.huntarr.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
+      # SERVICES
+      - traefik.http.services.huntarr.loadbalancer.server.scheme=http
+      - traefik.http.services.huntarr.loadbalancer.server.port=9705
+    # MIDDLEWARES
+
+  ###########################################################################
+  # Portainer - Docker Management
+  ###########################################################################
+  portainer-agent:
+    container_name: portainer-agent
+    image: "portainer/agent:latest"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/volumes:/var/lib/docker/volumes
+    restart: unless-stopped
+    ports:
+      - "${PORTAINER_AGENT_PORT:?err}:9001"
+    #environment:
+    #  AGENT_CLUSTER_ADDR: "192.168.1.171"  # IP srv-prod-1
+    labels:
+      - traefik.enable=true
+      # ROUTERS
+      - traefik.http.routers.portainer-agent.service=portainer-agent
+      - traefik.http.routers.portainer-agent.entrypoints=secureweb
+      - traefik.http.routers.portainer-agent.rule=Host(`portainer-agent-media.${CLOUDFLARE_DNS_ZONE:?err}`)
+      - traefik.http.routers.portainer-agent.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
+      # SERVICES
+      - traefik.http.services.portainer-agent.loadbalancer.server.scheme=http
+      - traefik.http.services.portainer-agent.loadbalancer.server.port=9001
+    # MIDDLEWARES
+    networks:
+      - media
+
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    restart: unless-stopped
+    ports:
+      - ${WEBUI_PORT_HOMEPAGE:?err}:3000
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${FOLDER_FOR_DATA:?err}/homepage:/app/config
+    environment:
+      - UMASK=${UMASK:?err}
+      - TZ=${TIMEZONE:?err}
+      - HOMEPAGE_ALLOWED_HOSTS=homepage,homepage.${CLOUDFLARE_DNS_ZONE:?err},${CLOUDFLARE_DNS_ZONE:?err},localhost,${LOCAL_DOCKER_IP:?err}
+    networks:
+      - media
+    labels:
+      - traefik.enable=true
+      # ROUTERS
+      - traefik.http.routers.homepage.service=homepage
+      - traefik.http.routers.homepage.rule=Host(`homepage.${CLOUDFLARE_DNS_ZONE:?err}`)
+      - traefik.http.routers.homepage.entrypoints=secureweb
+      - traefik.http.routers.homepage.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
+      # SERVICES
+      - traefik.http.services.homepage.loadbalancer.server.scheme=http
+      - traefik.http.services.homepage.loadbalancer.server.port=3000
+    # MIDDLEWARES
+###########################################################################

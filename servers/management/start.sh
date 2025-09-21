@@ -9,10 +9,11 @@ cd $FOLDER_FOR_YAMLS
 ENV_FILE=".env"
 if [ ! -f "$ENV_FILE" ]; then
     echo "❌ Error: .env file not found in $(pwd)"
-    echo "Please update the FOLDER_FOR_YAMLS=/docker location inside the start.sh script"
+    echo "Please update the FOLDER_FOR_YAMLS=/docker location inside the restart.sh script"
     exit 1
 fi
 
+# Read values from .env and clean them
 FOLDER_FOR_DATA=$(grep  -E '^FOLDER_FOR_DATA='  "$ENV_FILE" | cut -d '=' -f2- | xargs | tr -d '\r')
 PUID=$(grep -E '^PUID=' "$ENV_FILE" | cut -d '=' -f2- | xargs | tr -d '\r')
 PGID=$(grep -E '^PGID=' "$ENV_FILE" | cut -d '=' -f2- | xargs | tr -d '\r')
@@ -36,13 +37,6 @@ if [ ${#MISSING_VARS[@]} -ne 0 ]; then
     exit 1
 fi
 
-echo 
-echo Creating folders and setting permissions...
-echo 
-
-cd $FOLDER_FOR_YAMLS
-sudo -E mkdir -p $FOLDER_FOR_DATA/{grafana,guacamole,homepage,portainer,postgresql,prometheus,valkey}
-
 # This checks for missing variables and invalid docker compose configuration
 echo 
 echo Validating Docker Compose configuration...
@@ -63,7 +57,6 @@ sudo docker compose pull
 echo 
 echo Removing all non-persistent Docker containers, volumes, and networks...
 echo 
-containers=$(sudo docker ps -q)
 if [ -n "$containers" ]; then
   sudo docker stop $containers            # Stop all active Docker containers
   sudo docker rm   $containers            # Remove all active Docker containers
@@ -74,22 +67,7 @@ sudo docker container  prune -f           # Force-remove all Docker containers
 sudo docker volume     prune -f           # Force-remove all non-persistent Docker volumes
 sudo docker network    prune -f           # Force-remove all Docker networks
 
-echo 
-echo Setting file permissions...
-echo 
-sudo chmod 664                .env *yaml
-sudo chown $PUID:$PGID        .env *yaml *sh
-
-# Setup Guacamole database
-echo 
-echo Setting up Guacamole database...
-echo 
-if [ -f "./setup_guacamole_database.sh" ]; then
-    sudo chmod +x ./setup_guacamole_database.sh
-    ./setup_guacamole_database.sh
-fi
-
-# Subroutine below will check if Docker successfully started all containers, before pruning un-used images from Docker
+# Subroutine below will check if Docker successully started all containers, before pruning un-used images from Docker
 echo 
 echo Recreating all Docker containers, volumes, and networks...
 echo 
@@ -116,12 +94,6 @@ if [[ $FAILED -eq 0 ]]; then
     echo "All Docker containers are running... Removing all outdated Docker images that are not being used..."
     echo 
     sudo docker image prune -a -f
-    echo 
-    echo "🎉 HomeLab Management Server is now running!"
-    echo "📊 Grafana:    http://localhost:${WEBUI_PORT_GRAFANA:-3800}"
-    echo "📈 Prometheus: http://localhost:${WEBUI_PORT_PROMETHEUS:-9090}"
-    echo "🐳 Portainer:  http://localhost:${WEBUI_PORT_PORTAINER:-9000}"
-    echo "🖥️  Guacamole: http://localhost:${WEBUI_PORT_GUACAMOLE:-9200}"
 else
     echo 
     echo "One or more Docker services failed to start, unused Docker images will not be deleted..."

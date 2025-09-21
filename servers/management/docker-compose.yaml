@@ -1,7 +1,7 @@
 ###########################################################################
 # HomeLab Management Server
-# Tier 2: Monitoring, Management, Database, Remote Access
-# IP: 192.168.1.191 (srv-mgmt.intranet.vflorio.com)
+# Monitoring, Management, Database, Remote Access
+# IP: 192.168.1.191 (management.intranet.vflorio.com)
 ###########################################################################
 
 networks:
@@ -11,8 +11,8 @@ networks:
     ipam:
       driver: default
       config:
-      - subnet: ${DOCKER_SUBNET_MANAGEMENT:?err}
-        gateway: ${DOCKER_GATEWAY_MANAGEMENT:?err}
+      - subnet: ${DOCKER_SUBNET:?err}
+        gateway: ${DOCKER_GATEWAY:?err}
 
 ###########################################################################
 # CORE SERVICES
@@ -223,7 +223,7 @@ services:
       - TZ=${TIMEZONE:?err}
       - HOMEPAGE_ALLOWED_HOSTS=homepage,homepage.${CLOUDFLARE_DNS_ZONE:?err},${CLOUDFLARE_DNS_ZONE:?err},localhost,${LOCAL_DOCKER_IP:?err}
     networks:
-      - mediastack
+      - management
     labels:
       - traefik.enable=true
     # ROUTERS

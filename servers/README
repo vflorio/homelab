@@ -1,0 +1,8 @@
+(da root)
+
+ansible-playbook -i inventory/main.ini playbooks/install-docker.yml -e "hosts=servers"
+
+rsync -avz --progress --delete --mkpath ./servers/gateway/ vflorio@gateway.intranet.vflorio.com:~/gateway/
+rsync -avz --progress --delete --mkpath ./servers/management/ vflorio@management.intranet.vflorio.com:~/management/
+rsync -avz --progress --delete --mkpath ./servers/media/ vflorio@media.intranet.vflorio.com:~/media/
+

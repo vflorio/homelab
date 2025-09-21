@@ -7,7 +7,7 @@
 #
 #  i.e.   - main: vflorio.com
 #           sans:
-#             - "*.srv-demo-1.intranet.vflorio.com"
+#             - "*.vflorio.com"
 #
 #########################################################################
 #########################################################################
@@ -45,7 +45,7 @@ entryPoints:
         domains:
           - main: vflorio.com
             sans:
-              - "*.srv-demo-1.intranet.vflorio.com"
+              - "*.vflorio.com"
   metrics:
     address: :8082
 

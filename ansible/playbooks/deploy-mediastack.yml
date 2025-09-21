@@ -1,0 +1,218 @@
+---
+- name: Deploy MediaStack Infrastructure
+  hosts: servers:!dev.intranet.vflorio.com
+  become: true
+  vars:
+    docker_compose_version: "2.21.0"
+    mediastack_base_path: "/opt/mediastack"
+    mediastack_user: "{{ ansible_user }}"
+    
+    # Server type mapping based on hostname
+    server_type: >-
+      {% if 'gateway' in inventory_hostname %}
+      gateway
+      {% elif 'management' in inventory_hostname %}
+      management
+      {% elif 'media' in inventory_hostname %}
+      media
+      {% else %}
+      unknown
+      {% endif %}
+    
+  tasks:
+    - name: Update apt package cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install required packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+          - git
+          - rsync
+          - unzip
+          - wget
+        state: present
+
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Install Docker Engine
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+
+    - name: Start and enable Docker service
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Add user to docker group
+      user:
+        name: "{{ mediastack_user }}"
+        groups: docker
+        append: yes
+
+    - name: Create mediastack base directory
+      file:
+        path: "{{ mediastack_base_path }}"
+        state: directory
+        owner: "{{ mediastack_user }}"
+        group: "{{ mediastack_user }}"
+        mode: '0755'
+
+    - name: Create server-specific directory
+      file:
+        path: "{{ mediastack_base_path }}/{{ server_type }}"
+        state: directory
+        owner: "{{ mediastack_user }}"
+        group: "{{ mediastack_user }}"
+        mode: '0755'
+      when: server_type != 'unknown'
+
+    - name: Copy server configuration
+      synchronize:
+        src: "{{ playbook_dir }}/../../servers/{{ server_type }}/"
+        dest: "{{ mediastack_base_path }}/{{ server_type }}/"
+        delete: no
+        owner: no
+        group: no
+        rsync_opts:
+          - "--exclude=*.old"
+          - "--exclude=.git*"
+      when: server_type != 'unknown'
+
+    - name: Set ownership for server files
+      file:
+        path: "{{ mediastack_base_path }}/{{ server_type }}"
+        owner: "{{ mediastack_user }}"
+        group: "{{ mediastack_user }}"
+        recurse: yes
+      when: server_type != 'unknown'
+
+    - name: Set executable permissions for shell scripts
+      file:
+        path: "{{ item }}"
+        mode: '0755'
+      with_fileglob:
+        - "{{ mediastack_base_path }}/{{ server_type }}/*.sh"
+      when: server_type != 'unknown'
+
+    - name: Create docker networks for mediastack
+      docker_network:
+        name: "{{ item.name }}"
+        ipam_config:
+          - subnet: "{{ item.subnet }}"
+            gateway: "{{ item.gateway }}"
+      loop:
+        - name: media_network
+          subnet: 172.28.10.0/24
+          gateway: 172.28.10.1
+      when: server_type == 'media'
+
+    - name: Create docker networks for gateway
+      docker_network:
+        name: "{{ item.name }}"
+        ipam_config:
+          - subnet: "{{ item.subnet }}"
+            gateway: "{{ item.gateway }}"
+      loop:
+        - name: gateway_network
+          subnet: 172.29.10.0/24
+          gateway: 172.29.10.1
+      when: server_type == 'gateway'
+
+    - name: Create docker networks for management
+      docker_network:
+        name: "{{ item.name }}"
+        ipam_config:
+          - subnet: "{{ item.subnet }}"
+            gateway: "{{ item.gateway }}"
+      loop:
+        - name: management_network
+          subnet: 172.30.10.0/24
+          gateway: 172.30.10.1
+      when: server_type == 'management'
+
+    - name: Check if .env file exists and backup if present
+      stat:
+        path: "{{ mediastack_base_path }}/{{ server_type }}/.env"
+      register: env_file
+      when: server_type != 'unknown'
+
+    - name: Backup existing .env file
+      copy:
+        src: "{{ mediastack_base_path }}/{{ server_type }}/.env"
+        dest: "{{ mediastack_base_path }}/{{ server_type }}/.env.backup.{{ ansible_date_time.epoch }}"
+        remote_src: yes
+      when: server_type != 'unknown' and env_file.stat.exists
+
+    - name: Create default .env file if it doesn't exist
+      template:
+        src: "{{ playbook_dir }}/../templates/mediastack.env.j2"
+        dest: "{{ mediastack_base_path }}/{{ server_type }}/.env"
+        owner: "{{ mediastack_user }}"
+        group: "{{ mediastack_user }}"
+        mode: '0600'
+        force: no
+      when: server_type != 'unknown'
+
+    - name: Display deployment information
+      debug:
+        msg: |
+          MediaStack {{ server_type }} server deployment completed successfully!
+          
+          Service deployed to {{ mediastack_base_path }}/{{ server_type }}
+          
+          Docker networks created for {{ server_type }} server
+          
+          IMPORTANT: Configure your .env file before starting services!
+          
+          To start services manually via SSH:
+          cd {{ mediastack_base_path }}/{{ server_type }} && ./start.sh
+      when: server_type != 'unknown'
+
+    - name: Create deployment summary file
+      copy:
+        content: |
+          MediaStack {{ server_type | title }} Server Deployment Summary
+          ===============================================
+          
+          Deployment Date: {{ ansible_date_time.iso8601 }}
+          Target Host: {{ inventory_hostname }}
+          Server Type: {{ server_type }}
+          User: {{ mediastack_user }}
+          Base Path: {{ mediastack_base_path }}/{{ server_type }}
+          
+          Service Deployed:
+          - {{ server_type | title }}: {{ mediastack_base_path }}/{{ server_type }}
+          
+          Next Steps:
+          1. Review and configure .env file: {{ mediastack_base_path }}/{{ server_type }}/.env
+          2. Start services manually: cd {{ mediastack_base_path }}/{{ server_type }} && ./start.sh
+          3. Monitor logs for any issues
+          
+          For support, check the README.md in the ansible directory.
+        dest: "{{ mediastack_base_path }}/{{ server_type }}/DEPLOYMENT_SUMMARY.txt"
+        owner: "{{ mediastack_user }}"
+        group: "{{ mediastack_user }}"
+        mode: '0644'
+      when: server_type != 'unknown'
