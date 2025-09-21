@@ -1,0 +1,238 @@
+###########################################################################
+# HomeLab Management Server
+# Tier 2: Monitoring, Management, Database, Remote Access
+# IP: 192.168.1.191 (srv-mgmt.intranet.vflorio.com)
+###########################################################################
+
+networks:
+  management:
+    name: management
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+      - subnet: ${DOCKER_SUBNET_MANAGEMENT:?err}
+        gateway: ${DOCKER_GATEWAY_MANAGEMENT:?err}
+
+###########################################################################
+# CORE SERVICES
+###########################################################################
+
+services:
+
+###########################################################################
+# PostgreSQL - Shared Database Server
+###########################################################################
+  postgresql:
+    image: docker.io/library/postgres:latest
+    container_name: postgresql
+    restart: unless-stopped
+    networks:
+      - management
+    user: ${PUID:?err}:${PGID:?err}
+    ports:
+      - ${POSTGRESQL_PORT:?err}:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 5s
+    volumes:
+      - ${FOLDER_FOR_DATA:?err}/postgresql:/var/lib/postgresql/data
+    environment:
+      - TZ=${TIMEZONE:?err}
+      - POSTGRES_DB=${AUTHENTIK_DATABASE:?err}
+      - POSTGRES_USER=${POSTGRESQL_USERNAME:?err}
+      - POSTGRES_PASSWORD=${POSTGRESQL_PASSWORD:?err}
+
+###########################################################################
+# Guacamole / Guacd - Remote Desktop Gateway
+###########################################################################
+  guacamole:
+    image: guacamole/guacamole
+    container_name: guacamole
+    restart: unless-stopped
+    user: ${PUID:?err}:${PGID:?err}
+    depends_on:
+      postgresql:
+        condition: service_healthy
+        restart: true
+    networks:
+      - management
+    ports:
+      - ${WEBUI_PORT_GUACAMOLE:?err}:8080
+    environment:
+      - TZ=${TIMEZONE:?err}
+      - WEBAPP_CONTEXT=ROOT
+      - GUACD_HOSTNAME=guacd
+      - POSTGRESQL_HOSTNAME=postgresql
+      - POSTGRESQL_PORT=${POSTGRESQL_PORT:?err}
+      - POSTGRESQL_DATABASE=${GUACAMOLE_DATABASE:?err}
+      - POSTGRESQL_USER=${POSTGRESQL_USERNAME:?err}
+      - POSTGRESQL_PASSWORD=${POSTGRESQL_PASSWORD:?err}
+    labels:
+      - traefik.enable=true
+    # ROUTERS
+      - traefik.http.routers.guacamole.service=guacamole
+      - traefik.http.routers.guacamole.rule=Host(`guacamole.${CLOUDFLARE_DNS_ZONE:?err}`)
+      - traefik.http.routers.guacamole.entrypoints=secureweb
+      - traefik.http.routers.guacamole.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
+    # SERVICES
+      - traefik.http.services.guacamole.loadbalancer.server.scheme=http
+      - traefik.http.services.guacamole.loadbalancer.server.port=8080
+    # MIDDLEWARES
+
+  guacd:
+    image: guacamole/guacd
+    container_name: guacd
+    restart: unless-stopped
+    user: ${PUID:?err}:${PGID:?err}
+    depends_on:
+      postgresql:
+        condition: service_healthy
+        restart: true
+    networks:
+      - management
+    ports:
+      - ${GUACD_PORT:?err}:4822
+    environment:
+      - TZ=${TIMEZONE:?err}
+      - POSTGRESQL_HOSTNAME=postgresql
+      - POSTGRESQL_PORT=${POSTGRESQL_PORT:?err}
+      - POSTGRESQL_DATABASE=${GUACAMOLE_DATABASE:?err}
+      - POSTGRESQL_USER=${POSTGRESQL_USERNAME:?err}
+      - POSTGRESQL_PASSWORD=${POSTGRESQL_PASSWORD:?err}
+
+###########################################################################
+# Valkey - High Performance Data Structure Server (Redis alternative)
+###########################################################################
+  valkey:
+    image: valkey/valkey:alpine
+    container_name: valkey
+    command: --save 60 1 --loglevel warning
+    restart: unless-stopped
+    networks:
+      - management
+    user: ${PUID:?err}:${PGID:?err}
+    ports:
+      - ${VALKEY_PORT:?err}:6379
+    healthcheck:
+      test: ["CMD-SHELL", "valkey-cli ping | grep PONG"]
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 3s
+    volumes:
+      - ${FOLDER_FOR_DATA:?err}/valkey:/data
+
+###########################################################################
+# Prometheus - Metrics Collection & Monitoring
+###########################################################################
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    restart: unless-stopped
+    user: ${PUID:?err}:${PGID:?err}
+    networks:
+      - management
+    ports:
+      - 127.0.0.1:${WEBUI_PORT_PROMETHEUS:?err}:9090
+    volumes:
+      - ${FOLDER_FOR_DATA:?err}/prometheus:/prometheus
+    environment:
+      - TZ=${TIMEZONE:?err}
+    labels:
+      - traefik.enable=true
+    # ROUTERS
+      - traefik.http.routers.prometheus.service=prometheus
+      - traefik.http.routers.prometheus.rule=Host(`prometheus.${CLOUDFLARE_DNS_ZONE:?err}`)
+      - traefik.http.routers.prometheus.entrypoints=secureweb
+      - traefik.http.routers.prometheus.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
+    # SERVICES
+      - traefik.http.services.prometheus.loadbalancer.server.scheme=http
+      - traefik.http.services.prometheus.loadbalancer.server.port=9090
+    # MIDDLEWARES
+
+###########################################################################
+# Grafana - Visual Monitoring Dashboard
+###########################################################################
+  grafana:
+    image: grafana/grafana-enterprise
+    container_name: grafana
+    restart: unless-stopped
+    user: ${PUID:?err}:${PGID:?err}
+    networks:
+      - management
+    ports:
+      - ${WEBUI_PORT_GRAFANA:?err}:3000
+    volumes:
+      - /var/log:/var/dockerhost:ro
+      - ${FOLDER_FOR_DATA:?err}/grafana:/var/lib/grafana
+    environment:
+      - TZ=${TIMEZONE:?err}
+    labels:
+      - traefik.enable=true
+    # ROUTERS
+      - traefik.http.routers.grafana.service=grafana
+      - traefik.http.routers.grafana.rule=Host(`grafana.${CLOUDFLARE_DNS_ZONE:?err}`)
+      - traefik.http.routers.grafana.entrypoints=secureweb
+      - traefik.http.routers.grafana.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
+    # SERVICES
+      - traefik.http.services.grafana.loadbalancer.server.scheme=http
+      - traefik.http.services.grafana.loadbalancer.server.port=3000
+    # MIDDLEWARES
+
+###########################################################################
+# Portainer - Container Management
+###########################################################################
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${FOLDER_FOR_DATA:?err}/portainer:/data
+    ports:
+      - ${WEBUI_PORT_PORTAINER:?err}:9000
+    networks:
+      - management
+    labels:
+      - traefik.enable=true
+    # ROUTERS
+      - traefik.http.routers.portainer.service=portainer
+      - traefik.http.routers.portainer.rule=Host(`portainer.${CLOUDFLARE_DNS_ZONE:?err}`)
+      - traefik.http.routers.portainer.entrypoints=secureweb
+      - traefik.http.routers.portainer.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
+    # SERVICES
+      - traefik.http.services.portainer.loadbalancer.server.scheme=http
+      - traefik.http.services.portainer.loadbalancer.server.port=9000
+    # MIDDLEWARES
+    
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    restart: unless-stopped
+    ports:
+      - ${WEBUI_PORT_HOMEPAGE:?err}:3000
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${FOLDER_FOR_DATA:?err}/homepage:/app/config
+    environment:
+      - UMASK=${UMASK:?err}
+      - TZ=${TIMEZONE:?err}
+      - HOMEPAGE_ALLOWED_HOSTS=homepage,homepage.${CLOUDFLARE_DNS_ZONE:?err},${CLOUDFLARE_DNS_ZONE:?err},localhost,${LOCAL_DOCKER_IP:?err}
+    networks:
+      - mediastack
+    labels:
+      - traefik.enable=true
+    # ROUTERS
+      - traefik.http.routers.homepage.service=homepage
+      - traefik.http.routers.homepage.rule=Host(`homepage.${CLOUDFLARE_DNS_ZONE:?err}`)
+      - traefik.http.routers.homepage.entrypoints=secureweb
+      - traefik.http.routers.homepage.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
+    # SERVICES
+      - traefik.http.services.homepage.loadbalancer.server.scheme=http
+      - traefik.http.services.homepage.loadbalancer.server.port=3000
+    # MIDDLEWARES
+###########################################################################
