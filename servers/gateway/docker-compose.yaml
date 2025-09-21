@@ -42,7 +42,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ${FOLDER_FOR_DATA:?err}/logs/traefik:/var/log
       - ${FOLDER_FOR_DATA:?err}/traefik:/etc/traefik
-      - ${FOLDER_FOR_DATA:?err}/traefik/letsencrypt:/letsencrypt
     labels:
       - traefik.enable=true
     # ROUTERS
@@ -70,7 +69,7 @@ services:
       && traefik-certs-dumper file --version v2 --watch
       --source /data/acme.json --dest /certs'
     volumes:
-      - ${FOLDER_FOR_DATA:?err}/traefik/letsencrypt:/data:ro
+      - ${FOLDER_FOR_DATA:?err}/traefik:/data:ro
       - ${FOLDER_FOR_DATA:?err}/traefik-certs-dumper:/certs
 
 ###########################################################################

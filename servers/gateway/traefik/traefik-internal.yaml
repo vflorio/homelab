@@ -3,12 +3,6 @@
 #
 # Filename: internal.yaml        Traefik Internal Web Services Configuration File
 #
-# Replace all "vflorio.com" values with your domain name
-#
-#  i.e.   - main: vflorio.com
-#           sans:
-#             - "*.srv-demo-1.intranet.vflorio.com"
-#
 #########################################################################
 #########################################################################
 
