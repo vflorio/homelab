@@ -47,7 +47,7 @@ services:
       - traefik.enable=true
     # ROUTERS
       - traefik.http.routers.traefik.service=api@internal
-      - traefik.http.routers.traefik.rule=Host(`traefik.${CLOUDFLARE_DNS_ZONE:?err}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))
+      - traefik.http.routers.traefik.rule=Host(`traefik.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`traefik.${INTRANET_DOMAIN:?err}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))
       - traefik.http.routers.traefik.entrypoints=secureweb
       - traefik.http.routers.traefik.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
     # SERVICES
@@ -166,7 +166,7 @@ services:
       - traefik.enable=true
     # ROUTERS
       - traefik.http.routers.authentik.service=authentik
-      - traefik.http.routers.authentik.rule=Host(`auth.${CLOUDFLARE_DNS_ZONE:?err}`)
+      - traefik.http.routers.authentik.rule=Host(`auth.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`auth.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.authentik.entrypoints=secureweb
       - traefik.http.routers.authentik.middlewares=security-headers@file,traefik-bouncer@file
       # Do not add authentik-forwardauth@file to middlewares, otherwise other applications can't authenticate
@@ -250,7 +250,7 @@ services:
       - traefik.enable=true
     # ROUTERS
       - traefik.http.routers.headscale.service=headscale
-      - traefik.http.routers.headscale.rule=Host(`headscale.${CLOUDFLARE_DNS_ZONE:?err}`)
+      - traefik.http.routers.headscale.rule=Host(`headscale.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`headscale.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.headscale.entrypoints=secureweb
       - traefik.http.routers.headscale.middlewares=security-headers@file,traefik-bouncer@file
       # Do not add authentik-forwardauth@file to middlewares, otherwise Tailscale clients can't authenticate and connect
@@ -281,7 +281,7 @@ services:
       - traefik.enable=true
     # ROUTERS
       - traefik.http.routers.headplane.service=headplane
-      - traefik.http.routers.headplane.rule=Host(`headplane.${CLOUDFLARE_DNS_ZONE:?err}`) && PathPrefix(`/admin/`)
+      - traefik.http.routers.headplane.rule=(Host(`headplane.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`headplane.${INTRANET_DOMAIN:?err}`)) && PathPrefix(`/admin/`)
       - traefik.http.routers.headplane.entrypoints=secureweb
       - traefik.http.routers.headplane.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
     # SERVICES
@@ -330,7 +330,7 @@ services:
       - traefik.enable=true
     # ROUTERS
       - traefik.http.routers.ddns-updater.service=ddns-updater
-      - traefik.http.routers.ddns-updater.rule=Host(`ddns-updater.${CLOUDFLARE_DNS_ZONE:?err}`)
+      - traefik.http.routers.ddns-updater.rule=Host(`ddns-updater.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`ddns-updater.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.ddns-updater.entrypoints=secureweb
       - traefik.http.routers.ddns-updater.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
     # SERVICES
@@ -357,7 +357,7 @@ services:
       # ROUTERS
       - traefik.http.routers.portainer-agent.service=portainer-agent
       - traefik.http.routers.portainer-agent.entrypoints=secureweb
-      - traefik.http.routers.portainer-agent.rule=Host(`portainer-agent-gateway.${CLOUDFLARE_DNS_ZONE:?err}`)
+      - traefik.http.routers.portainer-agent.rule=Host(`portainer-agent-gateway.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`portainer-agent-gateway.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.portainer-agent.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
       # SERVICES
       - traefik.http.services.portainer-agent.loadbalancer.server.scheme=http

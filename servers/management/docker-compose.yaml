@@ -75,7 +75,7 @@ services:
       - traefik.enable=true
     # ROUTERS
       - traefik.http.routers.guacamole.service=guacamole
-      - traefik.http.routers.guacamole.rule=Host(`guacamole.${CLOUDFLARE_DNS_ZONE:?err}`)
+      - traefik.http.routers.guacamole.rule=Host(`guacamole.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`guacamole.${INTRANET_DOMAIN:?err}`)  
       - traefik.http.routers.guacamole.entrypoints=secureweb
       - traefik.http.routers.guacamole.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
     # SERVICES
@@ -146,7 +146,7 @@ services:
       - traefik.enable=true
     # ROUTERS
       - traefik.http.routers.prometheus.service=prometheus
-      - traefik.http.routers.prometheus.rule=Host(`prometheus.${CLOUDFLARE_DNS_ZONE:?err}`)
+      - traefik.http.routers.prometheus.rule=Host(`prometheus.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`prometheus.${INTRANET_DOMAIN:?err}`)  
       - traefik.http.routers.prometheus.entrypoints=secureweb
       - traefik.http.routers.prometheus.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
     # SERVICES
@@ -175,7 +175,7 @@ services:
       - traefik.enable=true
     # ROUTERS
       - traefik.http.routers.grafana.service=grafana
-      - traefik.http.routers.grafana.rule=Host(`grafana.${CLOUDFLARE_DNS_ZONE:?err}`)
+      - traefik.http.routers.grafana.rule=Host(`grafana.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`grafana.${INTRANET_DOMAIN:?err}`)  
       - traefik.http.routers.grafana.entrypoints=secureweb
       - traefik.http.routers.grafana.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
     # SERVICES
@@ -201,7 +201,7 @@ services:
       - traefik.enable=true
     # ROUTERS
       - traefik.http.routers.portainer.service=portainer
-      - traefik.http.routers.portainer.rule=Host(`portainer.${CLOUDFLARE_DNS_ZONE:?err}`)
+      - traefik.http.routers.portainer.rule=Host(`portainer.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`portainer.${INTRANET_DOMAIN:?err}`)  
       - traefik.http.routers.portainer.entrypoints=secureweb
       - traefik.http.routers.portainer.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
     # SERVICES
@@ -221,14 +221,14 @@ services:
     environment:
       - UMASK=${UMASK:?err}
       - TZ=${TIMEZONE:?err}
-      - HOMEPAGE_ALLOWED_HOSTS=homepage,homepage.${CLOUDFLARE_DNS_ZONE:?err},${CLOUDFLARE_DNS_ZONE:?err},localhost,${LOCAL_DOCKER_IP:?err}
+      - HOMEPAGE_ALLOWED_HOSTS=homepage,homepage.${CLOUDFLARE_DNS_ZONE:?err},${CLOUDFLARE_DNS_ZONE:?err},homepage.${INTRANET_DOMAIN:?err},${INTRANET_DOMAIN:?err},localhost,${LOCAL_DOCKER_IP:?err}
     networks:
       - management
     labels:
       - traefik.enable=true
     # ROUTERS
       - traefik.http.routers.homepage.service=homepage
-      - traefik.http.routers.homepage.rule=Host(`homepage.${CLOUDFLARE_DNS_ZONE:?err}`)
+      - traefik.http.routers.homepage.rule=Host(`homepage.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`homepage.${INTRANET_DOMAIN:?err}`)  
       - traefik.http.routers.homepage.entrypoints=secureweb
       - traefik.http.routers.homepage.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
     # SERVICES

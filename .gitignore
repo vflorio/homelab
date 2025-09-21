@@ -13,3 +13,4 @@ dns/bind/*.jnl
 .env
 *.tfvars
 *.pkrvars.hcl
+ansible/logs
