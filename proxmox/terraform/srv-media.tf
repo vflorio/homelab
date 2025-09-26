@@ -21,12 +21,12 @@ resource "proxmox_vm_qemu" "srv-media" {
     boot = "order=virtio0;ide2"
 
     # VM CPU Settings
-    cores = 4
+    cores = 6
     sockets = 1
     cpu_type = "host"
     
     # VM Memory Settings
-    memory = 8192
+    memory = 12288
 
     # VM Network Settings
     network {

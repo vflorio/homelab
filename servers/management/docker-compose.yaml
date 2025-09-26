@@ -300,6 +300,77 @@ services:
       - traefik.http.services.homepage.loadbalancer.server.port=3000
 
 ###########################################################################
+# Semaphore - Ansible Web UI / Frontend
+###########################################################################
+  semaphore:
+    image: semaphoreui/semaphore:latest
+    container_name: semaphore
+    restart: unless-stopped
+    user: ${PUID:?err}:${PGID:?err}
+    depends_on:
+      postgresql:
+        condition: service_healthy
+        restart: true
+    networks:
+      - management
+    ports:
+      - ${WEBUI_PORT_SEMAPHORE:?err}:3000
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/ping"]
+      start_period: 30s
+      interval: 30s
+      retries: 5
+      timeout: 10s
+    volumes:
+      - ${FOLDER_FOR_DATA:?err}/semaphore/config:/etc/semaphore:rw
+      - ${FOLDER_FOR_DATA:?err}/semaphore/tmp:/tmp/semaphore:rw
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Mount ansible playbooks
+      - ${FOLDER_FOR_DATA:?err}/ansible:/ansible:ro
+      # SSH keys for remote access
+      - ${FOLDER_FOR_DATA:?err}/ssh:/root/.ssh:ro
+    environment:
+      - TZ=${TIMEZONE:?err}
+      # Database configuration (PostgreSQL)
+      - SEMAPHORE_DB_DIALECT=postgres
+      - SEMAPHORE_DB_HOST=postgresql
+      - SEMAPHORE_DB_PORT=${POSTGRESQL_PORT:?err}
+      - SEMAPHORE_DB_NAME=${SEMAPHORE_DATABASE:?err}
+      - SEMAPHORE_DB_USER=${POSTGRESQL_USERNAME:?err}
+      - SEMAPHORE_DB_PASS=${POSTGRESQL_PASSWORD:?err}
+      # Admin user
+      - SEMAPHORE_ADMIN_NAME=${SEMAPHORE_ADMIN_USER:?err}
+      - SEMAPHORE_ADMIN_EMAIL=${SEMAPHORE_ADMIN_EMAIL:?err}
+      - SEMAPHORE_ADMIN_PASSWORD=${SEMAPHORE_ADMIN_PASSWORD:?err}
+      - SEMAPHORE_ADMIN=${SEMAPHORE_ADMIN_USER:?err}
+      # Access configuration
+      - SEMAPHORE_ACCESS_KEY_ENCRYPTION=${SEMAPHORE_ACCESS_KEY:?err}
+      # Web configuration
+      - SEMAPHORE_WEB_HOST=0.0.0.0
+      - SEMAPHORE_WEB_PORT=3000
+      # Features
+      - SEMAPHORE_LDAP_ENABLE=false
+      - SEMAPHORE_DEMO_MODE=false
+    labels:
+      # Consul service discovery
+      - consul.service.name=semaphore
+      - consul.service.tags=ansible,automation,cicd,management-server
+      - consul.service.port=3000
+      - consul.service.address=192.168.1.191
+      - consul.service.check.http=http://192.168.1.191:${WEBUI_PORT_SEMAPHORE:?err}/api/ping
+      - consul.service.check.interval=10s
+      # Traefik configuration
+      - traefik.enable=true
+      # Routers
+      - traefik.http.routers.semaphore.service=semaphore
+      - traefik.http.routers.semaphore.rule=Host(`semaphore.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`semaphore.${INTRANET_DOMAIN:?err}`)
+      - traefik.http.routers.semaphore.entrypoints=websecure
+      - traefik.http.routers.semaphore.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
+      # Services  
+      - traefik.http.services.semaphore.loadbalancer.server.scheme=http
+      - traefik.http.services.semaphore.loadbalancer.server.port=3000
+
+###########################################################################
 # VOLUMES
 ###########################################################################
 
