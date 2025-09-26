@@ -11,7 +11,7 @@ resource "proxmox_vm_qemu" "srv-gateway" {
     desc = "Ubuntu Gateway Server"
 
     # VM Advanced General Settings
-    onboot = false 
+    onboot = true 
 
     # VM OS Settings
     clone = "ubuntu-server-noble"
@@ -58,14 +58,14 @@ resource "proxmox_vm_qemu" "srv-gateway" {
     # VM Cloud-Init Settings
     os_type = "cloud-init"
 
-    # (Optional) IP Address and Gateway
+    # IP Address and Gateway
     ipconfig0 = "ip=192.168.1.190/24,gw=192.168.1.254"
-    #nameserver = "192.168.1.150"
+    nameserver = "192.168.1.150"
 
-    # (Optional) Default User
+    # Default User
     ciuser = "vflorio"
     
-    # (Optional) Add your SSH KEYs - HomeLab Device Keys
+    # Add your SSH KEYs - HomeLab Device Keys
     sshkeys = <<EOF
     ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN9KEOXdWXLzje6wV3UdyDhGIJAYiplHp9T3CBqNaQSi silicon-homelab-2025-09-14
     ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPe+jlx13luhQaGUaKhBxctrGqnMPojuFsLY6ueaU4UE carbon-homelab-2025-09-14

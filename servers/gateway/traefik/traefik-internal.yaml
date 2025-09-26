@@ -12,7 +12,7 @@
 #      rule: "Host(`synology.srv-demo-1.intranet.vflorio.com`)"
 #      service: synology
 #      entryPoints:
-#        - secureweb
+#        - websecure
 #      tls:
 #        certResolver: letsencrypt
 #      middlewares:
@@ -24,7 +24,7 @@
 #      rule: "Host(`gateway.srv-demo-1.intranet.vflorio.com`)"
 #      service: gateway
 #      entryPoints:
-#        - secureweb
+#        - websecure
 #      tls:
 #        certResolver: letsencrypt
 #      middlewares:

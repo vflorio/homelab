@@ -27,10 +27,10 @@ entryPoints:
     http:
       redirections:
         entryPoint:
-          to: secureweb
+          to: websecure
           scheme: https
           permanent: true
-  secureweb:
+  websecure:
     address: :443
     http:
       tls:
@@ -61,6 +61,23 @@ providers:
   file:
     directory: /etc/traefik
     watch: true
+  consul:
+    rootKey: "traefik"
+    endpoints:
+      - "consul:8500"
+    pollInterval: "5s"
+    watch: true
+    exposedByDefault: false
+  consulCatalog:
+    prefix: traefik
+    exposedByDefault: false
+    endpoints:
+      - "consul:8500"
+    watch: true
+    connectAware: true
+    pollInterval: "5s"
+    stale: false
+    defaultRule: "Host(`{{ normalize .Name }}.vflorio.com`)"
 
 certificatesResolvers:
   letsencrypt:

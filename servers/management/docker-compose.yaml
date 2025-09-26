@@ -21,7 +21,34 @@ networks:
 services:
 
 ###########################################################################
-# PostgreSQL - Shared Database Server
+# Consul - Service Discovery Agent
+###########################################################################
+  consul:
+    image: hashicorp/consul:1.21
+    container_name: consul-agent
+    restart: unless-stopped
+    networks:
+      - management
+    ports:
+      - "8500:8500"
+      - "8600:8600/udp"
+    volumes:
+      - ${FOLDER_FOR_DATA:?err}/consul/data:/consul/data
+    command: >
+      consul agent
+      -retry-join=192.168.1.190
+      -bind=0.0.0.0
+      -client=0.0.0.0
+      -data-dir=/consul/data
+      -datacenter=homelab
+      -log-level=INFO
+      -node=management-server
+    environment:
+      - TZ=${TIMEZONE:?err}
+      - CONSUL_BIND_INTERFACE=eth0
+
+###########################################################################
+# PostgreSQL - Shared Database
 ###########################################################################
   postgresql:
     image: docker.io/library/postgres:latest
@@ -29,7 +56,7 @@ services:
     restart: unless-stopped
     networks:
       - management
-    user: ${PUID:?err}:${PGID:?err}
+    # user: ${PUID:?err}:${PGID:?err}  # FIXME
     ports:
       - ${POSTGRESQL_PORT:?err}:5432
     healthcheck:
@@ -39,7 +66,8 @@ services:
       retries: 5
       timeout: 5s
     volumes:
-      - ${FOLDER_FOR_DATA:?err}/postgresql:/var/lib/postgresql/data
+      #- ${FOLDER_FOR_DATA:?err}/postgresql:/var/lib/postgresql/data # FIXME
+      - postgresql-data:/var/lib/postgresql/data
     environment:
       - TZ=${TIMEZONE:?err}
       - POSTGRES_DB=${AUTHENTIK_DATABASE:?err}
@@ -72,16 +100,23 @@ services:
       - POSTGRESQL_USER=${POSTGRESQL_USERNAME:?err}
       - POSTGRESQL_PASSWORD=${POSTGRESQL_PASSWORD:?err}
     labels:
+      # Consul service discovery
+      - consul.service.name=guacamole
+      - consul.service.tags=remote-access,rdp,vnc,ssh,management-server
+      - consul.service.port=8080
+      - consul.service.address=192.168.1.191
+      - consul.service.check.http=http://192.168.1.191:8080/
+      - consul.service.check.interval=10s
+      # Traefik configuration
       - traefik.enable=true
-    # ROUTERS
+      # Routers
       - traefik.http.routers.guacamole.service=guacamole
       - traefik.http.routers.guacamole.rule=Host(`guacamole.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`guacamole.${INTRANET_DOMAIN:?err}`)  
-      - traefik.http.routers.guacamole.entrypoints=secureweb
+      - traefik.http.routers.guacamole.entrypoints=websecure
       - traefik.http.routers.guacamole.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-    # SERVICES
+      # Services
       - traefik.http.services.guacamole.loadbalancer.server.scheme=http
       - traefik.http.services.guacamole.loadbalancer.server.port=8080
-    # MIDDLEWARES
 
   guacd:
     image: guacamole/guacd
@@ -143,16 +178,23 @@ services:
     environment:
       - TZ=${TIMEZONE:?err}
     labels:
+      # Consul service discovery
+      - consul.service.name=prometheus
+      - consul.service.tags=remote-access,rdp,vnc,ssh,management-server
+      - consul.service.port=9090
+      - consul.service.address=192.168.1.191
+      - consul.service.check.http=http://192.168.1.191:9090/
+      - consul.service.check.interval=10s
+      # Traefik configuration
       - traefik.enable=true
-    # ROUTERS
+      # Routers
       - traefik.http.routers.prometheus.service=prometheus
-      - traefik.http.routers.prometheus.rule=Host(`prometheus.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`prometheus.${INTRANET_DOMAIN:?err}`)  
-      - traefik.http.routers.prometheus.entrypoints=secureweb
+      - traefik.http.routers.prometheus.rule=Host(`prometheus.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`prometheus.${INTRANET_DOMAIN:?err}`)
+      - traefik.http.routers.prometheus.entrypoints=websecure
       - traefik.http.routers.prometheus.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-    # SERVICES
+      # Services
       - traefik.http.services.prometheus.loadbalancer.server.scheme=http
       - traefik.http.services.prometheus.loadbalancer.server.port=9090
-    # MIDDLEWARES
 
 ###########################################################################
 # Grafana - Visual Monitoring Dashboard
@@ -172,16 +214,23 @@ services:
     environment:
       - TZ=${TIMEZONE:?err}
     labels:
+      # Consul service discovery
+      - consul.service.name=grafana
+      - consul.service.tags=remote-access,rdp,vnc,ssh,management-server
+      - consul.service.port=3000
+      - consul.service.address=192.168.1.191
+      - consul.service.check.http=http://192.168.1.191:3000/
+      - consul.service.check.interval=10s
+      # Traefik configuration
       - traefik.enable=true
-    # ROUTERS
+      # Routers
       - traefik.http.routers.grafana.service=grafana
-      - traefik.http.routers.grafana.rule=Host(`grafana.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`grafana.${INTRANET_DOMAIN:?err}`)  
-      - traefik.http.routers.grafana.entrypoints=secureweb
+      - traefik.http.routers.grafana.rule=Host(`grafana.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`grafana.${INTRANET_DOMAIN:?err}`)
+      - traefik.http.routers.grafana.entrypoints=websecure
       - traefik.http.routers.grafana.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-    # SERVICES
-      - traefik.http.services.grafana.loadbalancer.server.scheme=http
+      # Services
+      - traefik.http.services.grafana.loadbalancer.server.scheme=http 
       - traefik.http.services.grafana.loadbalancer.server.port=3000
-    # MIDDLEWARES
 
 ###########################################################################
 # Portainer - Container Management
@@ -198,17 +247,24 @@ services:
     networks:
       - management
     labels:
+      # Consul service discovery
+      - consul.service.name=portainer
+      - consul.service.tags=remote-access,rdp,vnc,ssh,management-server
+      - consul.service.port=9000
+      - consul.service.address=192.168.1.191
+      - consul.service.check.http=http://192.168.1.191:9000/
+      - consul.service.check.interval=10s
+      # Traefik configuration
       - traefik.enable=true
-    # ROUTERS
+      # Routers
       - traefik.http.routers.portainer.service=portainer
-      - traefik.http.routers.portainer.rule=Host(`portainer.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`portainer.${INTRANET_DOMAIN:?err}`)  
-      - traefik.http.routers.portainer.entrypoints=secureweb
+      - traefik.http.routers.portainer.rule=Host(`portainer.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`portainer.${INTRANET_DOMAIN:?err}`)
+      - traefik.http.routers.portainer.entrypoints=websecure
       - traefik.http.routers.portainer.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-    # SERVICES
+      # Services
       - traefik.http.services.portainer.loadbalancer.server.scheme=http
       - traefik.http.services.portainer.loadbalancer.server.port=9000
-    # MIDDLEWARES
-    
+      
   homepage:
     image: ghcr.io/gethomepage/homepage:latest
     container_name: homepage
@@ -221,18 +277,32 @@ services:
     environment:
       - UMASK=${UMASK:?err}
       - TZ=${TIMEZONE:?err}
-      - HOMEPAGE_ALLOWED_HOSTS=homepage,homepage.${CLOUDFLARE_DNS_ZONE:?err},${CLOUDFLARE_DNS_ZONE:?err},homepage.${INTRANET_DOMAIN:?err},${INTRANET_DOMAIN:?err},localhost,${LOCAL_DOCKER_IP:?err}
+      - HOMEPAGE_ALLOWED_HOSTS=homepage.${CLOUDFLARE_DNS_ZONE:?err},homepage.${INTRANET_DOMAIN:?err},${INTRANET_DOMAIN:?err}:${WEBUI_PORT_HOMEPAGE:?err}
     networks:
       - management
     labels:
+      # Consul service discovery
+      - consul.service.name=homepage
+      - consul.service.tags=remote-access,rdp,vnc,ssh,management-server
+      - consul.service.port=3000
+      - consul.service.address=192.168.1.191
+      - consul.service.check.http=http://192.168.1.191:3000/
+      - consul.service.check.interval=10s
+      # Traefik configuration
       - traefik.enable=true
-    # ROUTERS
+      # Routers
       - traefik.http.routers.homepage.service=homepage
-      - traefik.http.routers.homepage.rule=Host(`homepage.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`homepage.${INTRANET_DOMAIN:?err}`)  
-      - traefik.http.routers.homepage.entrypoints=secureweb
+      - traefik.http.routers.homepage.rule=Host(`homepage.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`homepage.${INTRANET_DOMAIN:?err}`)
+      - traefik.http.routers.homepage.entrypoints=websecure
       - traefik.http.routers.homepage.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-    # SERVICES
+      # Services
       - traefik.http.services.homepage.loadbalancer.server.scheme=http
       - traefik.http.services.homepage.loadbalancer.server.port=3000
-    # MIDDLEWARES
+
 ###########################################################################
+# VOLUMES
+###########################################################################
+
+volumes:
+  postgresql-data:
+    driver: local

@@ -21,6 +21,46 @@ networks:
 services:
 
 ###########################################################################
+# Consul - Service Discovery & Configuration
+###########################################################################
+  consul:
+    image: hashicorp/consul:1.21
+    container_name: consul
+    restart: unless-stopped
+    networks:
+      - gateway
+    ports:
+      - "8500:8500"      # Web UI
+      - "8600:8600/udp"  # DNS
+      - "8301:8301"      # Serf LAN
+      - "8302:8302"      # Serf WAN
+    volumes:
+      - ${FOLDER_FOR_DATA:?err}/consul/data:/consul/data
+    command: >
+      consul agent
+      -server
+      -bootstrap-expect=1
+      -ui
+      -client=0.0.0.0
+      -data-dir=/consul/data
+      -datacenter=homelab
+      -log-level=INFO
+      -node=gateway-server
+    environment:
+      - TZ=${TIMEZONE:?err}
+    labels:
+      - traefik.enable=true
+    # ROUTERS
+      - traefik.http.routers.consul.service=consul
+      - traefik.http.routers.consul.rule=Host(`consul.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`consul.${INTRANET_DOMAIN:?err}`)
+      - traefik.http.routers.consul.entrypoints=websecure
+      - traefik.http.routers.consul.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
+    # SERVICES
+      - traefik.http.services.consul.loadbalancer.server.scheme=http
+      - traefik.http.services.consul.loadbalancer.server.port=8500
+    # MIDDLEWARES
+
+###########################################################################
 # Traefik - Reverse Proxy & TLS Management
 ###########################################################################
   traefik:
@@ -47,30 +87,30 @@ services:
     # ROUTERS
       - traefik.http.routers.traefik.service=api@internal
       - traefik.http.routers.traefik.rule=Host(`traefik.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`traefik.${INTRANET_DOMAIN:?err}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))
-      - traefik.http.routers.traefik.entrypoints=secureweb
+      - traefik.http.routers.traefik.entrypoints=websecure
       - traefik.http.routers.traefik.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
     # SERVICES
       - traefik.http.services.traefik.loadbalancer.server.scheme=http
       - traefik.http.services.traefik.loadbalancer.server.port=8080
     # MIDDLEWARES
 
-  traefik-certs-dumper:
-    image: ldez/traefik-certs-dumper:latest
-    container_name: traefik-certs-dumper
-    restart: always
-    networks:
-      - gateway
-    user: ${PUID:?err}:${PGID:?err}
-    entrypoint: sh -c '
-      while ! [ -e /data/acme.json ]
-      || ! [ `jq ".[] | .Certificates | length" /data/acme.json | jq -s "add" ` != 0 ]; do
-      sleep 1
-      ; done
-      && traefik-certs-dumper file --version v2 --watch
-      --source /data/acme.json --dest /certs'
-    volumes:
-      - ${FOLDER_FOR_DATA:?err}/traefik:/data:ro
-      - ${FOLDER_FOR_DATA:?err}/traefik-certs-dumper:/certs
+#  traefik-certs-dumper:
+#    image: ldez/traefik-certs-dumper:latest
+#    container_name: traefik-certs-dumper
+#    restart: always
+#    networks:
+#      - gateway
+#    user: ${PUID:?err}:${PGID:?err}
+#    entrypoint: sh -c '
+#      while ! [ -e /data/acme.json ]
+#      || ! [ `jq ".[] | .Certificates | length" /data/acme.json | jq -s "add" ` != 0 ]; do
+#      sleep 1
+#      ; done
+#      && traefik-certs-dumper file --version v2 --watch
+#      --source /data/acme.json --dest /certs'
+#    volumes:
+#      - ${FOLDER_FOR_DATA:?err}/traefik:/data:ro
+#      - ${FOLDER_FOR_DATA:?err}/traefik-certs-dumper:/certs
 
 ###########################################################################
 # PostgreSQL - Shared Database
@@ -166,7 +206,7 @@ services:
     # ROUTERS
       - traefik.http.routers.authentik.service=authentik
       - traefik.http.routers.authentik.rule=Host(`auth.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`auth.${INTRANET_DOMAIN:?err}`)
-      - traefik.http.routers.authentik.entrypoints=secureweb
+      - traefik.http.routers.authentik.entrypoints=websecure
       - traefik.http.routers.authentik.middlewares=security-headers@file,traefik-bouncer@file
       # Do not add authentik-forwardauth@file to middlewares, otherwise other applications can't authenticate
     # SERVICES
@@ -250,7 +290,7 @@ services:
     # ROUTERS
       - traefik.http.routers.headscale.service=headscale
       - traefik.http.routers.headscale.rule=Host(`headscale.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`headscale.${INTRANET_DOMAIN:?err}`)
-      - traefik.http.routers.headscale.entrypoints=secureweb
+      - traefik.http.routers.headscale.entrypoints=websecure
       - traefik.http.routers.headscale.middlewares=security-headers@file,traefik-bouncer@file
       # Do not add authentik-forwardauth@file to middlewares, otherwise Tailscale clients can't authenticate and connect
     # SERVICES
@@ -281,7 +321,7 @@ services:
     # ROUTERS
       - traefik.http.routers.headplane.service=headplane
       - traefik.http.routers.headplane.rule=(Host(`headplane.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`headplane.${INTRANET_DOMAIN:?err}`)) && PathPrefix(`/admin/`)
-      - traefik.http.routers.headplane.entrypoints=secureweb
+      - traefik.http.routers.headplane.entrypoints=websecure
       - traefik.http.routers.headplane.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
     # SERVICES
       - traefik.http.services.headplane.loadbalancer.server.scheme=http
@@ -330,7 +370,7 @@ services:
     # ROUTERS
       - traefik.http.routers.ddns-updater.service=ddns-updater
       - traefik.http.routers.ddns-updater.rule=Host(`ddns-updater.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`ddns-updater.${INTRANET_DOMAIN:?err}`)
-      - traefik.http.routers.ddns-updater.entrypoints=secureweb
+      - traefik.http.routers.ddns-updater.entrypoints=websecure
       - traefik.http.routers.ddns-updater.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
     # SERVICES
       - traefik.http.services.ddns-updater.loadbalancer.server.scheme=http
@@ -355,7 +395,7 @@ services:
       - traefik.enable=true
       # ROUTERS
       - traefik.http.routers.portainer-agent.service=portainer-agent
-      - traefik.http.routers.portainer-agent.entrypoints=secureweb
+      - traefik.http.routers.portainer-agent.entrypoints=websecure
       - traefik.http.routers.portainer-agent.rule=Host(`portainer-agent-gateway.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`portainer-agent-gateway.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.portainer-agent.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
       # SERVICES
