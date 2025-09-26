@@ -29,3 +29,8 @@
 - Tdarr (Transcoding)
 - Filebot/Unpackerr (Processing)
 - Flaresolverr (Cloudflare Bypass)
+
+(srv-dev)
+
+- installare SSD da iliadbox per storage dei repo, container-registry, etc
+[TODO]
