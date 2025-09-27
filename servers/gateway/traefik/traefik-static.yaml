@@ -61,23 +61,6 @@ providers:
   file:
     directory: /etc/traefik
     watch: true
-  consul:
-    rootKey: "traefik"
-    endpoints:
-      - "consul:8500"
-    pollInterval: "5s"
-    watch: true
-    exposedByDefault: false
-  consulCatalog:
-    prefix: traefik
-    exposedByDefault: false
-    endpoints:
-      - "consul:8500"
-    watch: true
-    connectAware: true
-    pollInterval: "5s"
-    stale: false
-    defaultRule: "Host(`{{ normalize .Name }}.vflorio.com`)"
 
 certificatesResolvers:
   letsencrypt:

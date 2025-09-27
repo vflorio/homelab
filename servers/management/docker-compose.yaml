@@ -13,39 +13,8 @@ networks:
       config:
       - subnet: ${DOCKER_SUBNET:?err}
         gateway: ${DOCKER_GATEWAY:?err}
-
-###########################################################################
-# CORE SERVICES
-###########################################################################
-
+ 
 services:
-
-###########################################################################
-# Consul - Service Discovery Agent
-###########################################################################
-  consul:
-    image: hashicorp/consul:1.21
-    container_name: consul-agent
-    restart: unless-stopped
-    networks:
-      - management
-    ports:
-      - "8500:8500"
-      - "8600:8600/udp"
-    volumes:
-      - ${FOLDER_FOR_DATA:?err}/consul/data:/consul/data
-    command: >
-      consul agent
-      -retry-join=192.168.1.190
-      -bind=0.0.0.0
-      -client=0.0.0.0
-      -data-dir=/consul/data
-      -datacenter=homelab
-      -log-level=INFO
-      -node=management-server
-    environment:
-      - TZ=${TIMEZONE:?err}
-      - CONSUL_BIND_INTERFACE=eth0
 
 ###########################################################################
 # PostgreSQL - Shared Database
@@ -100,13 +69,6 @@ services:
       - POSTGRESQL_USER=${POSTGRESQL_USERNAME:?err}
       - POSTGRESQL_PASSWORD=${POSTGRESQL_PASSWORD:?err}
     labels:
-      # Consul service discovery
-      - consul.service.name=guacamole
-      - consul.service.tags=remote-access,rdp,vnc,ssh,management-server
-      - consul.service.port=8080
-      - consul.service.address=192.168.1.191
-      - consul.service.check.http=http://192.168.1.191:8080/
-      - consul.service.check.interval=10s
       # Traefik configuration
       - traefik.enable=true
       # Routers
@@ -178,13 +140,6 @@ services:
     environment:
       - TZ=${TIMEZONE:?err}
     labels:
-      # Consul service discovery
-      - consul.service.name=prometheus
-      - consul.service.tags=remote-access,rdp,vnc,ssh,management-server
-      - consul.service.port=9090
-      - consul.service.address=192.168.1.191
-      - consul.service.check.http=http://192.168.1.191:9090/
-      - consul.service.check.interval=10s
       # Traefik configuration
       - traefik.enable=true
       # Routers
@@ -214,13 +169,6 @@ services:
     environment:
       - TZ=${TIMEZONE:?err}
     labels:
-      # Consul service discovery
-      - consul.service.name=grafana
-      - consul.service.tags=remote-access,rdp,vnc,ssh,management-server
-      - consul.service.port=3000
-      - consul.service.address=192.168.1.191
-      - consul.service.check.http=http://192.168.1.191:3000/
-      - consul.service.check.interval=10s
       # Traefik configuration
       - traefik.enable=true
       # Routers
@@ -247,13 +195,6 @@ services:
     networks:
       - management
     labels:
-      # Consul service discovery
-      - consul.service.name=portainer
-      - consul.service.tags=remote-access,rdp,vnc,ssh,management-server
-      - consul.service.port=9000
-      - consul.service.address=192.168.1.191
-      - consul.service.check.http=http://192.168.1.191:9000/
-      - consul.service.check.interval=10s
       # Traefik configuration
       - traefik.enable=true
       # Routers
@@ -281,13 +222,6 @@ services:
     networks:
       - management
     labels:
-      # Consul service discovery
-      - consul.service.name=homepage
-      - consul.service.tags=remote-access,rdp,vnc,ssh,management-server
-      - consul.service.port=3000
-      - consul.service.address=192.168.1.191
-      - consul.service.check.http=http://192.168.1.191:3000/
-      - consul.service.check.interval=10s
       # Traefik configuration
       - traefik.enable=true
       # Routers
@@ -352,13 +286,6 @@ services:
       - SEMAPHORE_LDAP_ENABLE=false
       - SEMAPHORE_DEMO_MODE=false
     labels:
-      # Consul service discovery
-      - consul.service.name=semaphore
-      - consul.service.tags=ansible,automation,cicd,management-server
-      - consul.service.port=3000
-      - consul.service.address=192.168.1.191
-      - consul.service.check.http=http://192.168.1.191:${WEBUI_PORT_SEMAPHORE:?err}/api/ping
-      - consul.service.check.interval=10s
       # Traefik configuration
       - traefik.enable=true
       # Routers

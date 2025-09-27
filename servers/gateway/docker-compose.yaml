@@ -14,51 +14,7 @@ networks:
       - subnet: ${DOCKER_SUBNET:?err}
         gateway: ${DOCKER_GATEWAY:?err}
 
-###########################################################################
-# CORE SERVICES
-###########################################################################
-
 services:
-
-###########################################################################
-# Consul - Service Discovery & Configuration
-###########################################################################
-  consul:
-    image: hashicorp/consul:1.21
-    container_name: consul
-    restart: unless-stopped
-    networks:
-      - gateway
-    ports:
-      - "8500:8500"      # Web UI
-      - "8600:8600/udp"  # DNS
-      - "8301:8301"      # Serf LAN
-      - "8302:8302"      # Serf WAN
-    volumes:
-      - ${FOLDER_FOR_DATA:?err}/consul/data:/consul/data
-    command: >
-      consul agent
-      -server
-      -bootstrap-expect=1
-      -ui
-      -client=0.0.0.0
-      -data-dir=/consul/data
-      -datacenter=homelab
-      -log-level=INFO
-      -node=gateway-server
-    environment:
-      - TZ=${TIMEZONE:?err}
-    labels:
-      - traefik.enable=true
-    # ROUTERS
-      - traefik.http.routers.consul.service=consul
-      - traefik.http.routers.consul.rule=Host(`consul.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`consul.${INTRANET_DOMAIN:?err}`)
-      - traefik.http.routers.consul.entrypoints=websecure
-      - traefik.http.routers.consul.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-    # SERVICES
-      - traefik.http.services.consul.loadbalancer.server.scheme=http
-      - traefik.http.services.consul.loadbalancer.server.port=8500
-    # MIDDLEWARES
 
 ###########################################################################
 # Traefik - Reverse Proxy & TLS Management
