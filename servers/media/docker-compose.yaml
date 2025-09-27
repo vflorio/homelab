@@ -110,6 +110,8 @@ services:
       - TP_THEME=${TP_THEME:?err}
     networks:
       - media
+    ports:
+      - ${WEBUI_PORT_QBITTORRENT:?err}:8200
     labels:
       - traefik.enable=true
     # ROUTERS
@@ -431,16 +433,6 @@ services:
       ## Folder Settings
       - UN_FOLDERS_INTERVAL=1s
       - UN_FOLDERS_BUFFER=20000
-      ## Mylar Settings
-      ## Mylar Config - Copy API Key from: http://mylar:8090/general/settings
-      - UN_MYLAR_0_URL=http://mylar:8090
-      - UN_MYLAR_0_API_KEY=0123456789abcdef0123456789abcdef
-      - UN_MYLAR_0_PATHS_0=/data/torrents/comics
-      - UN_MYLAR_0_PROTOCOLS=torrent
-      - UN_MYLAR_0_TIMEOUT=10s
-      - UN_MYLAR_0_DELETE_DELAY=5m
-      - UN_MYLAR_0_DELETE_ORIG=false
-      - UN_MYLAR_0_SYNCTHING=false
       ## Sonarr Settings
       ## Sonarr Config - Copy API Key from: http://sonarr:8989/general/settings
       - UN_SONARR_0_URL=http://sonarr:8989
@@ -588,6 +580,9 @@ services:
       - nodeID=Tdarr_Server
     networks:
       - media
+    ports:
+      - ${WEBUI_PORT_TDARR:?err}:8265
+      - ${TDARR_SERVER_PORT:?err}:${TDARR_SERVER_PORT:?err}
     labels:
       - traefik.enable=true
       # ROUTERS
@@ -626,6 +621,37 @@ services:
       # SERVICES
       - traefik.http.services.huntarr.loadbalancer.server.scheme=http
       - traefik.http.services.huntarr.loadbalancer.server.port=9705
+    # MIDDLEWARES
+
+  ###########################################################################
+  # Whisparr - Adult Media Management
+  ###########################################################################
+  whisparr:
+    image: ghcr.io/hotio/whisparr
+    container_name: whisparr
+    restart: unless-stopped
+    volumes:
+      - ${FOLDER_FOR_MEDIA:?err}:/data
+      - ${FOLDER_FOR_DATA:?err}/whisparr:/config
+    environment:
+      - PUID=${PUID:?err}
+      - PGID=${PGID:?err}
+      - UMASK=${UMASK:?err}
+      - TZ=${TIMEZONE:?err}
+    networks:
+      - media 
+    ports:
+      - ${WEBUI_PORT_WHISPARR:?err}:6969
+    labels:
+      - traefik.enable=true
+    # ROUTERS
+      - traefik.http.routers.whisparr.service=whisparr
+      - traefik.http.routers.whisparr.rule=Host(`whisparr.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`whisparr.${INTRANET_DOMAIN:?err}`)
+      - traefik.http.routers.whisparr.entrypoints=secureweb
+      - traefik.http.routers.whisparr.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
+    # SERVICES
+      - traefik.http.services.whisparr.loadbalancer.server.scheme=http
+      - traefik.http.services.whisparr.loadbalancer.server.port=6969
     # MIDDLEWARES
 
   ###########################################################################

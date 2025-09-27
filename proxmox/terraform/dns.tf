@@ -11,7 +11,7 @@ resource "proxmox_vm_qemu" "dns" {
     desc = "DNS Server"
 
     # VM Advanced General Settings
-    onboot = false 
+    onboot = true 
 
     # VM OS Settings
     clone = "ubuntu-server-noble"

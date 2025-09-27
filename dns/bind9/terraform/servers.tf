@@ -61,3 +61,19 @@ resource "dns_a_record_set" "dev_wildcard" {
   addresses = ["192.168.1.193"]
   ttl       = 3600
 }
+
+# Server Cloud 
+
+resource "dns_a_record_set" "cloud" {
+  zone      = "intranet.vflorio.com."
+  name      = "cloud"
+  addresses = ["192.168.1.194"]
+  ttl       = 3600
+}
+
+resource "dns_a_record_set" "cloud_wildcard" {
+  zone      = "intranet.vflorio.com."
+  name      = "*.cloud"
+  addresses = ["192.168.1.194"]
+  ttl       = 3600
+}

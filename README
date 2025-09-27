@@ -1,4 +1,4 @@
- (srv-gateway)
+ (gateway server)
  
 - Traefik (Reverse Proxy + TLS)
 - Authentik (Authentication)
@@ -8,7 +8,7 @@
 - DDNS Updater
 - Certificates Management
 
- (srv-mgmt)
+ (management server)
 
 - Portainer (Container Management)
 - Prometheus (Metrics)
@@ -17,8 +17,9 @@
 - PostgreSQL (Shared Database)
 - Valkey/Redis (Cache)
 - Homepage/Heimdall/Homarr (Dashboards)
+- VaultWarden (Password manager)
 
-(srv-media)
+(media server)
 
 - Jellyfin/Plex (Media Streaming)
 - Sonarr/Radarr/Lidarr/Readarr (Automation)
@@ -30,7 +31,14 @@
 - Filebot/Unpackerr (Processing)
 - Flaresolverr (Cloudflare Bypass)
 
-(srv-dev)
+(dev server)
+- Gitea (Git repository server)
+- Container Registry (Docker Registry)
+- Verdaccio (Private NPM Store)
+- Code Server (VS Code nel browser)
+- Excalidraw (Sketching)
+- Drawio (Sketching)
 
-- installare SSD da iliadbox per storage dei repo, container-registry, etc
-[TODO]
+(cloud server)
+- Nextcloud (Cloud storage)
+- OnlyOffice (Office suite)
