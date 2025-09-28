@@ -106,4 +106,26 @@ services:
       - "traefik.http.routers.onlyoffice.entrypoints=web"
       - "traefik.http.services.onlyoffice.loadbalancer.server.port=80"
     networks:
-      - homelab
+      - cloud
+
+###########################################################################
+# Traefik-KOP - Service Discovery Agent
+###########################################################################
+  traefik-kop:
+    image: "ghcr.io/jittering/traefik-kop:latest"
+    container_name: traefik-kop
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      # Redis del Gateway Server (Valkey)
+      - "REDIS_ADDR=${GATEWAY_IP:?err}:${VALKEY_PORT:?err}"
+      - "REDIS_DB=${VALKEY_DB_TRAEFIK:?err}"
+      - "BIND_IP=${LOCAL_DOCKER_IP:?err}"  # IP di questo server
+      - "KOP_HOSTNAME=cloud-server"
+      - "VERBOSE=true"  # Per debug iniziale
+      - "KOP_POLL_INTERVAL=60"
+    networks:
+      - cloud
+    labels:
+      - traefik.enable=false  # Non esporre traefik-kop stesso

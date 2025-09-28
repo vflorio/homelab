@@ -13,7 +13,11 @@ networks:
       config:
       - subnet: ${DOCKER_SUBNET:?err}
         gateway: ${DOCKER_GATEWAY:?err}
- 
+
+volumes:
+  postgresql-data:
+    driver: local
+
 services:
 
 ###########################################################################
@@ -78,7 +82,7 @@ services:
       - traefik.http.routers.guacamole.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
       # Services
       - traefik.http.services.guacamole.loadbalancer.server.scheme=http
-      - traefik.http.services.guacamole.loadbalancer.server.port=8080
+      - traefik.http.services.guacamole.loadbalancer.server.port=${WEBUI_PORT_GUACAMOLE:?err}
 
   guacd:
     image: guacamole/guacd
@@ -298,9 +302,17 @@ services:
       - traefik.http.services.semaphore.loadbalancer.server.port=3000
 
 ###########################################################################
-# VOLUMES
+# Traefik-KOP - Service Discovery Agent
 ###########################################################################
-
-volumes:
-  postgresql-data:
-    driver: local
+  traefik-kop:
+    image: "ghcr.io/jittering/traefik-kop:latest"
+    container_name: traefik-kop
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - "REDIS_ADDR=${GATEWAY_IP:?err}:${VALKEY_PORT:?err}"
+      - "REDIS_DB=${VALKEY_DB_TRAEFIK:?err}"
+      - "BIND_IP=${LOCAL_DOCKER_IP:?err}"
+    networks:
+      - management

@@ -79,8 +79,8 @@ echo Moving configuration files into application folders...
 echo 
 sudo chmod 664                .env *yaml
 sudo chown $PUID:$PGID        .env *yaml *sh
-sudo touch                    $FOLDER_FOR_DATA/traefik/letsencrypt/acme.json
-sudo chmod 600                $FOLDER_FOR_DATA/traefik/letsencrypt/acme.json && echo "Permissions set to 600 on certs file $FOLDER_FOR_DATA/traefik/letsencrypt/acme.json"
+sudo touch                    $FOLDER_FOR_DATA/traefik/acme.json
+sudo chmod 600                $FOLDER_FOR_DATA/traefik/acme.json && echo "Permissions set to 600 on certs file $FOLDER_FOR_DATA/traefik/acme.json"
 sudo cp headplane/headplane-config.yaml $FOLDER_FOR_DATA/headplane/config.yaml         && echo "File headplane-config.yaml copied to $FOLDER_FOR_DATA/headplane/config.yaml"
 sudo cp headscale/headscale-config.yaml $FOLDER_FOR_DATA/headscale/config.yaml         && echo "File headscale-config.yaml copied to $FOLDER_FOR_DATA/headscale/config.yaml"
 sudo cp traefik/traefik-static.yaml   $FOLDER_FOR_DATA/traefik/traefik.yaml          && echo "File traefik-static.yaml   copied to $FOLDER_FOR_DATA/traefik/traefik.yaml"
