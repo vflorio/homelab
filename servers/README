@@ -16,11 +16,11 @@ rsync -avz --progress --delete --mkpath ./servers/dev/ vflorio@dev.intranet.vflo
 rsync -avz --progress --delete --mkpath ./servers/cloud/ vflorio@cloud.intranet.vflorio.com:~/cloud/
 ```
 
-ssh vflorio@gateway.intranet.vflorio.com "cd ~/gateway && ./start.sh"
-ssh vflorio@management.intranet.vflorio.com "cd ~/management && ./start.sh"
-ssh vflorio@media.intranet.vflorio.com "cd ~/media && ./start.sh"
-ssh vflorio@dev.intranet.vflorio.com "cd ~/dev && ./start.sh"
-ssh vflorio@cloud.intranet.vflorio.com "cd ~/cloud && ./start.sh"
+ssh vflorio@gateway.intranet.vflorio.com "cd ~/gateway && docker compose up -d"
+ssh vflorio@management.intranet.vflorio.com "cd ~/management && docker compose up -d"
+ssh vflorio@media.intranet.vflorio.com "cd ~/media && docker compose up -d"
+ssh vflorio@dev.intranet.vflorio.com "cd ~/dev && docker compose up -d"
+ssh vflorio@cloud.intranet.vflorio.com "cd ~/cloud && docker compose up -d"
 
 ssh vflorio@gateway.intranet.vflorio.com "cd ~/gateway && docker compose down"
 ssh vflorio@management.intranet.vflorio.com "cd ~/management && docker compose down"

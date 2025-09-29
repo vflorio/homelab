@@ -14,9 +14,33 @@ networks:
         - subnet: ${DOCKER_SUBNET:?err}
           gateway: ${DOCKER_GATEWAY:?err}
 
-###########################################################################
-# MEDIA STREAMING SERVICES
-###########################################################################
+volumes:
+  ssd-0:
+    driver: local
+    driver_opts:
+      type: cifs
+      device: //${INTRANET_NAS_IP}/ssd-0
+      o: username=${SAMBA_USERNAME},password=${SAMBA_PASSWORD}
+
+  media-0:
+    driver: local
+    driver_opts:
+      type: cifs
+      device: //${INTRANET_NAS_IP}/media-0
+      o: username=${SAMBA_USERNAME},password=${SAMBA_PASSWORD}
+      
+  media-1:
+    driver: local
+    driver_opts:
+      type: cifs
+      device: //${INTRANET_NAS_IP}/media-1
+      o: username=${SAMBA_USERNAME},password=${SAMBA_PASSWORD}
+  media-2:
+    driver: local
+    driver_opts:
+      type: cifs
+      device: //${INTRANET_NAS_IP}/media-2
+      o: username=${SAMBA_USERNAME},password=${SAMBA_PASSWORD}
 
 services:
   ###########################################################################
@@ -26,24 +50,21 @@ services:
     image: lscr.io/linuxserver/jellyfin:latest
     container_name: jellyfin
     restart: unless-stopped
-    # Add Configurations for GPU Hardware Rendering Here:
-    #    devices:
-    #      - /dev/dri/renderD128:/dev/dri/renderD128
-    #      - /dev/dri/card0:/dev/dri/card0
     volumes:
-      - /mnt/nas:/data/nas
-      - ${FOLDER_FOR_MEDIA:?err}/media:/data/media
-      - ${FOLDER_FOR_DATA:?err}/jellyfin:/config
+      - ssd-0:/mnt/ssd-0/
+      - media-0:/mnt/media-0/
+      - media-1:/mnt/media-1/
+      - media-2:/mnt/media-2/
+      - ${PATH_DATA:?err}/jellyfin:/config
     environment:
       - PUID=${PUID:?err}
       - PGID=${PGID:?err}
       - UMASK=${UMASK:?err}
       - TZ=${TIMEZONE:?err}
-    #      - JELLYFIN_PublishedServerUrl=${LOCAL_DOCKER_IP:?err}  # Enable for DLNA - Only works on HOST Network Mode
     networks:
       - media
     ports:
-      - ${WEBUI_PORT_JELLYFIN:?err}:8096
+      - ${PORT_JELLYFIN:?err}:8096
     labels:
       - traefik.enable=true
         # Routers
@@ -53,7 +74,7 @@ services:
       - traefik.http.routers.jellyfin.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
         # Services
       - traefik.http.services.jellyfin.loadbalancer.server.scheme=http
-      - traefik.http.services.jellyfin.loadbalancer.server.port=${WEBUI_PORT_JELLYFIN:?err} 
+      - traefik.http.services.jellyfin.loadbalancer.server.port=${PORT_JELLYFIN:?err}
 
   ###########################################################################
   # Jellyseerr - Media Request Management
@@ -65,14 +86,15 @@ services:
     networks:
       - media
     volumes:
-      - ${FOLDER_FOR_DATA:?err}/jellyseerr:/app/config
+      - ssd-0:/mnt/ssd-0/
     environment:
       - PUID=${PUID:?err}
       - PGID=${PGID:?err}
+      - ${PATH_DATA:?err}/jellyseerr:/app/config
       - UMASK=${UMASK:?err}
       - TZ=${TIMEZONE:?err}
     ports:
-      - ${WEBUI_PORT_JELLYSEERR:?err}:5055
+      - ${PORT_JELLYSEERR:?err}:5055
     labels:
       - traefik.enable=true
         # Routers
@@ -85,10 +107,6 @@ services:
       - traefik.http.services.jellyseerr.loadbalancer.server.port=5055
 
   ###########################################################################
-  # DOWNLOAD SERVICES
-  ###########################################################################
-
-  ###########################################################################
   # qBittorrent - Torrent Client
   ###########################################################################
   qbittorrent:
@@ -96,20 +114,24 @@ services:
     container_name: qbittorrent
     restart: unless-stopped
     volumes:
-      - ${FOLDER_FOR_MEDIA:?err}:/data
-      - ${FOLDER_FOR_DATA:?err}/qbittorrent:/config
+      - ssd-0:/mnt/ssd-0/
+      - media-0:/mnt/media/media-0/
+      - media-1:/mnt/media/media-1/
+      - media-2:/mnt/media/media-2/
+      - ${PATH_DATA:?err}/qbittorrent:/config
+      - ${PATH_MEDIA:?err}:/data
     environment:
       - PUID=${PUID:?err}
       - PGID=${PGID:?err}
       - UMASK=${UMASK:?err}
       - TZ=${TIMEZONE:?err}
-      - WEBUI_PORT=${WEBUI_PORT_QBITTORRENT:?err}
+      - WEBUI_PORT=${PORT_QBITTORRENT:?err}
       - DOCKER_MODS=ghcr.io/themepark-dev/theme.park:qbittorrent
       - TP_THEME=${TP_THEME:?err}
     networks:
       - media
     ports:
-      - ${WEBUI_PORT_QBITTORRENT:?err}:8200
+      - ${PORT_QBITTORRENT:?err}:8200
     labels:
       - traefik.enable=true
       # Routers
@@ -119,7 +141,7 @@ services:
       - traefik.http.routers.qbittorrent.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
       # Services
       - traefik.http.services.qbittorrent.loadbalancer.server.scheme=http
-      - traefik.http.services.qbittorrent.loadbalancer.server.port=${WEBUI_PORT_QBITTORRENT:?err}
+      - traefik.http.services.qbittorrent.loadbalancer.server.port=${PORT_QBITTORRENT:?err}
 
   ###########################################################################
   # SABnzbd - Usenet Client
@@ -129,8 +151,12 @@ services:
     container_name: sabnzbd
     restart: unless-stopped
     volumes:
-      - ${FOLDER_FOR_MEDIA:?err}:/data
-      - ${FOLDER_FOR_DATA:?err}/sabnzbd:/config
+      - ssd-0:/mnt/ssd-0/
+      - media-0:/mnt/media/media-0/
+      - media-1:/mnt/media/media-1/
+      - media-2:/mnt/media/media-2/
+      - ${PATH_DATA:?err}/sabnzbd:/config
+      - ${PATH_MEDIA:?err}:/data
     environment:
       - PUID=${PUID:?err}
       - PGID=${PGID:?err}
@@ -140,7 +166,7 @@ services:
     networks:
       - media
     ports:
-      - ${WEBUI_PORT_SABNZBD:?err}:8080
+      - ${PORT_SABNZBD:?err}:8080
     labels:
       - traefik.enable=true
         # Routers
@@ -153,10 +179,6 @@ services:
       - traefik.http.services.sabnzbd.loadbalancer.server.port=8080
 
   ###########################################################################
-  # AUTOMATION SERVICES (STARR APPS)
-  ###########################################################################
-
-  ###########################################################################
   # Prowlarr - Indexer Management
   ###########################################################################
   prowlarr:
@@ -164,7 +186,8 @@ services:
     container_name: prowlarr
     restart: unless-stopped
     volumes:
-      - ${FOLDER_FOR_DATA:?err}/prowlarr:/config
+      - ssd-0:/mnt/ssd-0/
+      - ${PATH_DATA:?err}/prowlarr:/config
     environment:
       - PUID=${PUID:?err}
       - PGID=${PGID:?err}
@@ -174,7 +197,7 @@ services:
     networks:
       - media
     ports:
-      - ${WEBUI_PORT_PROWLARR:?err}:9696
+      - ${PORT_PROWLARR:?err}:9696
     labels:
       - traefik.enable=true
         # Routers
@@ -194,8 +217,12 @@ services:
     container_name: sonarr
     restart: unless-stopped
     volumes:
-      - ${FOLDER_FOR_MEDIA:?err}:/data
-      - ${FOLDER_FOR_DATA:?err}/sonarr:/config
+      - ssd-0:/mnt/ssd-0/
+      - media-0:/mnt/media/media-0/
+      - media-1:/mnt/media/media-1/
+      - media-2:/mnt/media/media-2/
+      - ${PATH_DATA:?err}/sonarr:/config
+      - ${PATH_MEDIA:?err}:/data
     environment:
       - PUID=${PUID:?err}
       - PGID=${PGID:?err}
@@ -205,7 +232,7 @@ services:
     networks:
       - media
     ports:
-      - ${WEBUI_PORT_SONARR:?err}:8989
+      - ${PORT_SONARR:?err}:8989
     labels:
       - traefik.enable=true
         # Routers
@@ -225,8 +252,12 @@ services:
     container_name: radarr
     restart: unless-stopped
     volumes:
-      - ${FOLDER_FOR_MEDIA:?err}:/data
-      - ${FOLDER_FOR_DATA:?err}/radarr:/config
+      - ssd-0:/mnt/ssd-0/
+      - media-0:/mnt/media/media-0/
+      - media-1:/mnt/media/media-1/
+      - media-2:/mnt/media/media-2/
+      - ${PATH_DATA:?err}/radarr:/config
+      - ${PATH_MEDIA:?err}:/data
     environment:
       - PUID=${PUID:?err}
       - PGID=${PGID:?err}
@@ -236,7 +267,7 @@ services:
     networks:
       - media
     ports:
-      - ${WEBUI_PORT_RADARR:?err}:7878
+      - ${PORT_RADARR:?err}:7878
     labels:
       - traefik.enable=true
         # Routers
@@ -256,8 +287,12 @@ services:
     container_name: lidarr
     restart: unless-stopped
     volumes:
-      - ${FOLDER_FOR_MEDIA:?err}:/data
-      - ${FOLDER_FOR_DATA:?err}/lidarr:/config
+      - ssd-0:/mnt/ssd-0/
+      - media-0:/mnt/media/media-0/
+      - media-1:/mnt/media/media-1/
+      - media-2:/mnt/media/media-2/
+      - ${PATH_DATA:?err}/lidarr:/config
+      - ${PATH_MEDIA:?err}:/data
     environment:
       - PUID=${PUID:?err}
       - PGID=${PGID:?err}
@@ -267,7 +302,7 @@ services:
     networks:
       - media
     ports:
-      - ${WEBUI_PORT_LIDARR:?err}:8686
+      - ${PORT_LIDARR:?err}:8686
     labels:
       - traefik.enable=true
         # Routers
@@ -287,8 +322,12 @@ services:
     container_name: readarr
     restart: unless-stopped
     volumes:
-      - ${FOLDER_FOR_MEDIA:?err}:/data
-      - ${FOLDER_FOR_DATA:?err}/readarr:/config
+      - ssd-0:/mnt/ssd-0/
+      - media-0:/mnt/media/media-0/
+      - media-1:/mnt/media/media-1/
+      - media-2:/mnt/media/media-2/
+      - ${PATH_DATA:?err}/readarr:/config
+      - ${PATH_MEDIA:?err}:/data
     environment:
       - PUID=${PUID:?err}
       - PGID=${PGID:?err}
@@ -298,7 +337,7 @@ services:
     networks:
       - media
     ports:
-      - ${WEBUI_PORT_READARR:?err}:8787
+      - ${PORT_READARR:?err}:8787
     labels:
       - traefik.enable=true
         # Routers
@@ -318,8 +357,12 @@ services:
     container_name: bazarr
     restart: unless-stopped
     volumes:
-      - ${FOLDER_FOR_MEDIA:?err}:/data
-      - ${FOLDER_FOR_DATA:?err}/bazarr:/config
+      - ssd-0:/mnt/ssd-0/
+      - media-0:/mnt/media/media-0/
+      - media-1:/mnt/media/media-1/
+      - media-2:/mnt/media/media-2/
+      - ${PATH_DATA:?err}/bazarr:/config
+      - ${PATH_MEDIA:?err}:/data
     environment:
       - PUID=${PUID:?err}
       - PGID=${PGID:?err}
@@ -327,7 +370,7 @@ services:
       - DOCKER_MODS=ghcr.io/themepark-dev/theme.park:bazarr
       - TP_THEME=${TP_THEME:?err}
     ports:
-      - ${WEBUI_PORT_BAZARR:?err}:6767
+      - ${PORT_BAZARR:?err}:6767
     networks:
       - media
     labels:
@@ -340,10 +383,6 @@ services:
         # Services
       - traefik.http.services.bazarr.loadbalancer.server.scheme=http
       - traefik.http.services.bazarr.loadbalancer.server.port=6767
-
-  ###########################################################################
-  # UTILITY SERVICES
-  ###########################################################################
 
   ###########################################################################
   # Flaresolverr - Cloudflare Bypass
@@ -360,7 +399,7 @@ services:
     networks:
       - media
     ports:
-      - ${WEBUI_PORT_FLARESOLVERR:?err}:8191
+      - ${PORT_FLARESOLVERR:?err}:8191
     labels:
       - traefik.enable=true
         # Routers
@@ -381,12 +420,16 @@ services:
     restart: unless-stopped
     user: ${PUID:?err}:${PGID:?err}
     volumes:
-      - ${FOLDER_FOR_MEDIA:?err}:/data
-      - ${FOLDER_FOR_DATA:?err}/unpackerr:/config
-      - ${FOLDER_FOR_DATA:?err}/logs/unpackerr:/var/log
+      - ssd-0:/mnt/ssd-0/
+      - media-0:/mnt/media/media-0/
+      - media-1:/mnt/media/media-1/
+      - media-2:/mnt/media/media-2/
+      - ${PATH_DATA:?err}/unpackerr:/config
+      - ${PATH_MEDIA:?err}:/data
     networks:
       - media
     ports:
+      - ${PATH_DATA:?err}/logs/unpackerr:/var/log
       - ${METRICS_PORT_UNPACKERR:?err}:5656
     environment:
       - UMASK=${UMASK:?err}
@@ -519,8 +562,12 @@ services:
     container_name: filebot
     restart: unless-stopped
     volumes:
-      - ${FOLDER_FOR_MEDIA:?err}/filebot:/filebot
-      - ${FOLDER_FOR_DATA:?err}/filebot:/data/filebot
+      - ssd-0:/mnt/ssd-0/
+      - media-0:/mnt/media/media-0/
+      - media-1:/mnt/media/media-1/
+      - media-2:/mnt/media/media-2/
+      - ${PATH_DATA:?err}/filebot:/data/filebot
+      - ${PATH_MEDIA:?err}/filebot:/filebot
     environment:
       #      - XPRA_AUTH=password:value=YOUR_PASSWORD
       - PUID=${PUID:?err}
@@ -529,7 +576,7 @@ services:
       - TZ=${TIMEZONE:?err}
       - DARK_MODE=1
     ports:
-      - ${WEBUI_PORT_FILEBOT:?err}:5454
+      - ${PORT_FILEBOT:?err}:5454
     networks:
       - media
     labels:
@@ -551,26 +598,30 @@ services:
     container_name: tdarr
     restart: unless-stopped
     volumes:
-      - ${FOLDER_FOR_MEDIA:?err}/media:/data
-      - ${FOLDER_FOR_DATA:?err}/tdarr/server:/app/server
-      - ${FOLDER_FOR_DATA:?err}/tdarr/configs:/app/configs
-      - ${FOLDER_FOR_DATA:?err}/tdarr/logs:/app/logs
-      - ${FOLDER_FOR_DATA:?err}/tdarr-node:/temp
+      - ssd-0:/mnt/ssd-0/
+      - media-0:/mnt/media/media-0/
+      - media-1:/mnt/media/media-1/
+      - media-2:/mnt/media/media-2/
+      - ${PATH_DATA:?err}/tdarr/server:/app/server
+      - ${PATH_MEDIA:?err}/media:/data
+      - ${PATH_DATA:?err}/tdarr/logs:/app/logs
+      - ${PATH_DATA:?err}/tdarr-node:/temp
     environment:
+      - ${PATH_DATA:?err}/tdarr/configs:/app/configs
       - PUID=${PUID:?err}
       - PGID=${PGID:?err}
       - UMASK=${UMASK:?err}
       - TZ=${TIMEZONE:?err}
       - serverIP=0.0.0.0
-      - serverPort=${TDARR_SERVER_PORT:?err}
-      - webUIPort=${WEBUI_PORT_TDARR:?err}
+      - serverPort=${PORT_TDARR:?err}
+      - webUIPort=${PORT_TDARR:?err}
       - internalNode=true
       - nodeID=Tdarr_Server
     networks:
       - media
     ports:
-      - ${WEBUI_PORT_TDARR:?err}:8265
-      - ${TDARR_SERVER_PORT:?err}:${TDARR_SERVER_PORT:?err}
+      - ${PORT_TDARR:?err}:8265
+      - ${PORT_TDARR:?err}:${PORT_TDARR:?err}
     labels:
       - traefik.enable=true
         # Routers
@@ -580,7 +631,7 @@ services:
       - traefik.http.routers.tdarr.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
         # Services
       - traefik.http.services.tdarr.loadbalancer.server.scheme=http
-      - traefik.http.services.tdarr.loadbalancer.server.port=${WEBUI_PORT_TDARR:?err}
+      - traefik.http.services.tdarr.loadbalancer.server.port=${PORT_TDARR:?err}
 
   ###########################################################################
   # Huntarr - Automated Search Tool
@@ -589,7 +640,8 @@ services:
     image: huntarr/huntarr:latest
     container_name: huntarr
     volumes:
-      - ${FOLDER_FOR_DATA:?err}/huntarr:/config
+      - ssd-0:/mnt/ssd-0/
+      - ${PATH_DATA:?err}/huntarr:/config
     environment:
       - PUID=${PUID:?err}
       - PGID=${PGID:?err}
@@ -597,7 +649,7 @@ services:
     networks:
       - media
     ports:
-      - ${WEBUI_PORT_HUNTARR:?err}:9705
+      - ${PORT_HUNTARR:?err}:9705
     labels:
       - traefik.enable=true
         # Routers
@@ -617,8 +669,12 @@ services:
     container_name: mylar
     restart: unless-stopped
     volumes:
-      - ${FOLDER_FOR_MEDIA:?err}:/data
-      - ${FOLDER_FOR_DATA:?err}/mylar:/config
+      - ssd-0:/mnt/ssd-0/
+      - media-0:/mnt/media/media-0/
+      - media-1:/mnt/media/media-1/
+      - media-2:/mnt/media/media-2/
+      - ${PATH_DATA:?err}/mylar:/config
+      - ${PATH_MEDIA:?err}:/data
     environment:
       - PUID=${PUID:?err}
       - PGID=${PGID:?err}
@@ -628,7 +684,7 @@ services:
     networks:
       - media
     ports:
-      - ${WEBUI_PORT_MYLAN:?err}:8090
+      - ${PORT_MYLAN:?err}:8090
     labels:
       - traefik.enable=true
       # Routers
@@ -648,17 +704,21 @@ services:
     container_name: whisparr
     restart: unless-stopped
     volumes:
-      - ${FOLDER_FOR_MEDIA:?err}:/data
-      - ${FOLDER_FOR_DATA:?err}/whisparr:/config
+      - ssd-0:/mnt/ssd-0/
+      - media-0:/mnt/media/media-0/
+      - media-1:/mnt/media/media-1/
+      - media-2:/mnt/media/media-2/
+      - ${PATH_DATA:?err}/whisparr:/config
+      - ${PATH_MEDIA:?err}:/data
     environment:
       - PUID=${PUID:?err}
       - PGID=${PGID:?err}
       - UMASK=${UMASK:?err}
       - TZ=${TIMEZONE:?err}
     networks:
-      - media 
+      - media
     ports:
-      - ${WEBUI_PORT_WHISPARR:?err}:6969
+      - ${PORT_WHISPARR:?err}:6969
     labels:
       - traefik.enable=true
       # Routers
@@ -677,11 +737,12 @@ services:
     container_name: portainer-agent
     image: "portainer/agent:latest"
     volumes:
+      - ssd-0:/mnt/ssd-0/
       - /var/run/docker.sock:/var/run/docker.sock
       - /var/lib/docker/volumes:/var/lib/docker/volumes
     restart: unless-stopped
     ports:
-      - "${PORTAINER_AGENT_PORT:?err}:9001"
+      - "${PORT_PORTAINER_AGENT:?err}:9001"
     #environment:
     #  AGENT_CLUSTER_ADDR: "192.168.1.171"  # IP srv-prod-1
     labels:
@@ -705,10 +766,11 @@ services:
     container_name: homepage
     restart: unless-stopped
     ports:
-      - ${WEBUI_PORT_HOMEPAGE:?err}:3000
+      - ${PORT_HOMEPAGE:?err}:3000
     volumes:
+      - ssd-0:/mnt/ssd-0/
+      - ${PATH_DATA:?err}/homepage:/app/config
       - /var/run/docker.sock:/var/run/docker.sock
-      - ${FOLDER_FOR_DATA:?err}/homepage:/app/config
     environment:
       - UMASK=${UMASK:?err}
       - TZ=${TIMEZONE:?err}
@@ -726,18 +788,19 @@ services:
       - traefik.http.services.homepage.loadbalancer.server.scheme=http
       - traefik.http.services.homepage.loadbalancer.server.port=3000
 
-###########################################################################
-# Traefik-KOP - Service Discovery Agent
-###########################################################################
+  ###########################################################################
+  # Traefik-KOP - Service Discovery Agent
+  ###########################################################################
   traefik-kop:
     image: "ghcr.io/jittering/traefik-kop:latest"
     container_name: traefik-kop
     restart: unless-stopped
     volumes:
+      - ssd-0:/mnt/ssd-0/
       - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
-      - "REDIS_ADDR=${GATEWAY_IP:?err}:${VALKEY_PORT:?err}"
-      - "REDIS_DB=${VALKEY_DB_TRAEFIK:?err}"
+      - "REDIS_ADDR=${INTRANET_GATEWAY_IP:?err}:${PORT_VALKEY:?err}"
+      - "REDIS_DB=${VALKEY_TRAEFIK_KOP:?err}"
       - "BIND_IP=${LOCAL_DOCKER_IP:?err}"
     networks:
       - media
