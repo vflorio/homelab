@@ -16,6 +16,7 @@ networks:
 
 volumes:
   postgresql-data:
+  valkey-data:
   ssd-0:
     driver: local
     driver_opts:
@@ -67,7 +68,7 @@ services:
     restart: unless-stopped
     networks:
       - gateway
-    user: ${PUID:?err}:${PGID:?err}
+#    user: ${PUID:?err}:${PGID:?err}
     command: server
     environment:
       - TZ=${TIMEZONE:?err}
@@ -88,6 +89,7 @@ services:
       - AUTHENTIK_EMAIL__FROM=${EMAIL_SENDER}
       - AUTHENTIK_EMAIL__TIMEOUT=10
     volumes:
+      - ssd-0:/mnt/ssd-0/
       - ${PATH_DATA:?err}/authentik/media:/media
       - ${PATH_DATA:?err}/authentik/templates:/templates
     ports:
@@ -117,7 +119,7 @@ services:
     restart: unless-stopped
     networks:
       - gateway
-    user: ${PUID:?err}:${PGID:?err}
+#    user: ${PUID:?err}:${PGID:?err}
     command: worker
     environment:
       - TZ=${TIMEZONE:?err}
@@ -130,7 +132,7 @@ services:
       - AUTHENTIK_ERROR_REPORTING__ENABLED=${AUTHENTIK_ERROR_REPORTING__ENABLED:?err}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-        - ssd-0:/mnt/ssd-0/
+      - ssd-0:/mnt/ssd-0/
       - ${PATH_DATA:?err}/authentik/certs:/certs
       - ${PATH_DATA:?err}/authentik/media:/media
       - ${PATH_DATA:?err}/authentik/templates:/templates
@@ -151,7 +153,7 @@ services:
     restart: always
     networks:
       - gateway
-    user: ${PUID:?err}:${PGID:?err}
+#    user: ${PUID:?err}:${PGID:?err}
     environment:
       - TZ=${TIMEZONE:?err}
     ports:
@@ -164,7 +166,7 @@ services:
       - ssd-0:/mnt/ssd-0/
       - ${PATH_DATA:?err}/crowdsec:/etc/crowdsec
       - ${PATH_DATA:?err}/crowdsec/data:/var/lib/crowdsec/data/
-      - ${PATH_DATA:?err}/logs:/logs:ro
+      - ${PATH_DATA:?err}/logs:/logs
 
   ###########################################################################
   # Headscale - Self-hosted VPN Control Server
@@ -234,7 +236,7 @@ services:
     image: qmcgaw/ddns-updater:latest
     container_name: ddns-updater
     restart: always
-    user: ${PUID:?err}:${PGID:?err}
+#    user: ${PUID:?err}:${PGID:?err}
     volumes:
       - ssd-0:/mnt/ssd-0/
       - ${PATH_DATA:?err}/ddns-updater:/updater/data
@@ -310,11 +312,11 @@ services:
     restart: unless-stopped
     networks:
       - gateway
-    user: ${PUID:?err}:${PGID:?err}
+#    user: ${PUID:?err}:${PGID:?err}
     ports:
       - ${PORT_POSTGRES:?err}:5432
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -d $${AUTHENTIK_DATABASE} -U $${POSTGRES_USER}"]
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${AUTHENTIK_DATABASE}"]
       start_period: 20s
       interval: 30s
       retries: 5
@@ -338,7 +340,7 @@ services:
     restart: unless-stopped
     networks:
       - gateway
-    user: ${PUID:?err}:${PGID:?err}
+#    user: ${PUID:?err}:${PGID:?err}
     ports:
       - ${PORT_VALKEY:?err}:6379
     healthcheck:
@@ -348,5 +350,4 @@ services:
       retries: 5
       timeout: 3s
     volumes:
-      - ssd-0:/mnt/ssd-0/
-      - ${PATH_DATA:?err}/valkey:/data
+      - valkey-data:/data

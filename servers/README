@@ -4,7 +4,7 @@
 (da root)
 
 ```bash
-ansible-playbook -i inventory/main.ini playbooks/install-docker.yml -e "hosts=servers"
+ansible-playbook -i inventory.ini playbooks/install-docker.yml -e "hosts=servers"
 ```
 
 ## Manual Sync

@@ -57,9 +57,9 @@ services:
       - media-2:/mnt/media-2/
       - ${PATH_DATA:?err}/jellyfin:/config
     environment:
-      - PUID=${PUID:?err}
-      - PGID=${PGID:?err}
-      - UMASK=${UMASK:?err}
+#      - PUID=${PUID:?err}
+#      - PGID=${PGID:?err}
+#      - UMASK=${UMASK:?err}
       - TZ=${TIMEZONE:?err}
     networks:
       - media
@@ -74,7 +74,7 @@ services:
       - traefik.http.routers.jellyfin.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
         # Services
       - traefik.http.services.jellyfin.loadbalancer.server.scheme=http
-      - traefik.http.services.jellyfin.loadbalancer.server.port=${PORT_JELLYFIN:?err}
+      - traefik.http.services.jellyfin.loadbalancer.server.port=8096
 
   ###########################################################################
   # Jellyseerr - Media Request Management
@@ -88,10 +88,10 @@ services:
     volumes:
       - ssd-0:/mnt/ssd-0/
     environment:
-      - PUID=${PUID:?err}
-      - PGID=${PGID:?err}
+#      - PUID=${PUID:?err}
+#      - PGID=${PGID:?err}
       - ${PATH_DATA:?err}/jellyseerr:/app/config
-      - UMASK=${UMASK:?err}
+#      - UMASK=${UMASK:?err}
       - TZ=${TIMEZONE:?err}
     ports:
       - ${PORT_JELLYSEERR:?err}:5055
@@ -121,9 +121,9 @@ services:
       - ${PATH_DATA:?err}/qbittorrent:/config
       - ${PATH_MEDIA:?err}:/data
     environment:
-      - PUID=${PUID:?err}
-      - PGID=${PGID:?err}
-      - UMASK=${UMASK:?err}
+#      - PUID=${PUID:?err}
+#      - PGID=${PGID:?err}
+#      - UMASK=${UMASK:?err}
       - TZ=${TIMEZONE:?err}
       - WEBUI_PORT=${PORT_QBITTORRENT:?err}
       - DOCKER_MODS=ghcr.io/themepark-dev/theme.park:qbittorrent
@@ -158,8 +158,8 @@ services:
       - ${PATH_DATA:?err}/sabnzbd:/config
       - ${PATH_MEDIA:?err}:/data
     environment:
-      - PUID=${PUID:?err}
-      - PGID=${PGID:?err}
+#      - PUID=${PUID:?err}
+#      - PGID=${PGID:?err}
       - TZ=${TIMEZONE:?err}
       - DOCKER_MODS=ghcr.io/themepark-dev/theme.park:sabnzbd
       - TP_THEME=${TP_THEME:?err}
@@ -189,8 +189,8 @@ services:
       - ssd-0:/mnt/ssd-0/
       - ${PATH_DATA:?err}/prowlarr:/config
     environment:
-      - PUID=${PUID:?err}
-      - PGID=${PGID:?err}
+#      - PUID=${PUID:?err}
+#      - PGID=${PGID:?err}
       - TZ=${TIMEZONE:?err}
       - DOCKER_MODS=ghcr.io/themepark-dev/theme.park:prowlarr
       - TP_THEME=${TP_THEME:?err}
@@ -224,8 +224,8 @@ services:
       - ${PATH_DATA:?err}/sonarr:/config
       - ${PATH_MEDIA:?err}:/data
     environment:
-      - PUID=${PUID:?err}
-      - PGID=${PGID:?err}
+#      - PUID=${PUID:?err}
+#      - PGID=${PGID:?err}
       - TZ=${TIMEZONE:?err}
       - DOCKER_MODS=ghcr.io/themepark-dev/theme.park:sonarr
       - TP_THEME=${TP_THEME:?err}
@@ -259,8 +259,8 @@ services:
       - ${PATH_DATA:?err}/radarr:/config
       - ${PATH_MEDIA:?err}:/data
     environment:
-      - PUID=${PUID:?err}
-      - PGID=${PGID:?err}
+#      - PUID=${PUID:?err}
+#      - PGID=${PGID:?err}
       - TZ=${TIMEZONE:?err}
       - DOCKER_MODS=ghcr.io/themepark-dev/theme.park:radarr
       - TP_THEME=${TP_THEME:?err}
@@ -294,8 +294,8 @@ services:
       - ${PATH_DATA:?err}/lidarr:/config
       - ${PATH_MEDIA:?err}:/data
     environment:
-      - PUID=${PUID:?err}
-      - PGID=${PGID:?err}
+#      - PUID=${PUID:?err}
+#      - PGID=${PGID:?err}
       - TZ=${TIMEZONE:?err}
       - DOCKER_MODS=ghcr.io/themepark-dev/theme.park:lidarr
       - TP_THEME=${TP_THEME:?err}
@@ -329,8 +329,8 @@ services:
       - ${PATH_DATA:?err}/readarr:/config
       - ${PATH_MEDIA:?err}:/data
     environment:
-      - PUID=${PUID:?err}
-      - PGID=${PGID:?err}
+#      - PUID=${PUID:?err}
+#      - PGID=${PGID:?err}
       - TZ=${TIMEZONE:?err}
       - DOCKER_MODS=ghcr.io/themepark-dev/theme.park:readarr
       - TP_THEME=${TP_THEME:?err}
@@ -364,8 +364,8 @@ services:
       - ${PATH_DATA:?err}/bazarr:/config
       - ${PATH_MEDIA:?err}:/data
     environment:
-      - PUID=${PUID:?err}
-      - PGID=${PGID:?err}
+#      - PUID=${PUID:?err}
+#      - PGID=${PGID:?err}
       - TZ=${TIMEZONE:?err}
       - DOCKER_MODS=ghcr.io/themepark-dev/theme.park:bazarr
       - TP_THEME=${TP_THEME:?err}
@@ -418,7 +418,7 @@ services:
     image: golift/unpackerr
     container_name: unpackerr
     restart: unless-stopped
-    user: ${PUID:?err}:${PGID:?err}
+#    user: ${PUID:?err}:${PGID:?err}
     volumes:
       - ssd-0:/mnt/ssd-0/
       - media-0:/mnt/media/media-0/
@@ -430,9 +430,9 @@ services:
       - media
     ports:
       - ${PATH_DATA:?err}/logs/unpackerr:/var/log
-      - ${METRICS_PORT_UNPACKERR:?err}:5656
+      - ${PORT_UNPACKERR_METRICS:?err}:5656
     environment:
-      - UMASK=${UMASK:?err}
+#      - UMASK=${UMASK:?err}
       - TZ=${TIMEZONE:?err}
       # Remove all lines that begin with UN_CMDHOOK, UN_WEBHOOK, UN_FOLDER, UN_WEBSERVER, and other apps you do not use.
       ## Global Settings
@@ -569,10 +569,10 @@ services:
       - ${PATH_DATA:?err}/filebot:/data/filebot
       - ${PATH_MEDIA:?err}/filebot:/filebot
     environment:
-      #      - XPRA_AUTH=password:value=YOUR_PASSWORD
-      - PUID=${PUID:?err}
-      - PGID=${PGID:?err}
-      - UMASK=${UMASK:?err}
+#      - XPRA_AUTH=password:value=YOUR_PASSWORD
+#      - PUID=${PUID:?err}
+#      - PGID=${PGID:?err}
+#      - UMASK=${UMASK:?err}
       - TZ=${TIMEZONE:?err}
       - DARK_MODE=1
     ports:
@@ -602,19 +602,19 @@ services:
       - media-0:/mnt/media/media-0/
       - media-1:/mnt/media/media-1/
       - media-2:/mnt/media/media-2/
-      - ${PATH_DATA:?err}/tdarr/server:/app/server
       - ${PATH_MEDIA:?err}/media:/data
+      - ${PATH_DATA:?err}/tdarr/server:/app/server
+      - ${PATH_DATA:?err}/tdarr/configs:/app/configs
       - ${PATH_DATA:?err}/tdarr/logs:/app/logs
       - ${PATH_DATA:?err}/tdarr-node:/temp
     environment:
-      - ${PATH_DATA:?err}/tdarr/configs:/app/configs
-      - PUID=${PUID:?err}
-      - PGID=${PGID:?err}
-      - UMASK=${UMASK:?err}
+#      - PUID=${PUID:?err}
+#      - PGID=${PGID:?err}
+#      - UMASK=${UMASK:?err}
       - TZ=${TIMEZONE:?err}
       - serverIP=0.0.0.0
-      - serverPort=${PORT_TDARR:?err}
-      - webUIPort=${PORT_TDARR:?err}
+      - serverPort=${PORT_TDARRT:?err}
+      - webUIPort=${PORT_TDARR_WEB:?err}
       - internalNode=true
       - nodeID=Tdarr_Server
     networks:
@@ -632,6 +632,26 @@ services:
         # Services
       - traefik.http.services.tdarr.loadbalancer.server.scheme=http
       - traefik.http.services.tdarr.loadbalancer.server.port=${PORT_TDARR:?err}
+  tdarr-node:
+    image: ghcr.io/haveagitgat/tdarr_node:latest
+    container_name: tdarr-node
+    restart: unless-stopped
+    volumes:
+      - ${FOLDER_FOR_MEDIA:?err}/media:/data
+      - ${FOLDER_FOR_DATA:?err}/tdarr/configs:/app/configs
+      - ${FOLDER_FOR_DATA:?err}/tdarr/logs:/app/logs
+      - ${FOLDER_FOR_DATA:?err}/tdarr-node:/temp
+    environment:
+#      - PUID=${PUID:?err}
+#      - PGID=${PGID:?err}
+#      - UMASK=${UMASK:?err}
+      - TZ=${TIMEZONE:?err}
+      - nodeID=Tdarr_Node_1
+      - serverIP=0.0.0.0
+      - serverPort=${PORT_TDARRT:?err}
+    networks:
+      - media
+
 
   ###########################################################################
   # Huntarr - Automated Search Tool
@@ -643,8 +663,8 @@ services:
       - ssd-0:/mnt/ssd-0/
       - ${PATH_DATA:?err}/huntarr:/config
     environment:
-      - PUID=${PUID:?err}
-      - PGID=${PGID:?err}
+#      - PUID=${PUID:?err}
+#      - PGID=${PGID:?err}
       - TZ=${TIMEZONE:?err}
     networks:
       - media
@@ -676,8 +696,8 @@ services:
       - ${PATH_DATA:?err}/mylar:/config
       - ${PATH_MEDIA:?err}:/data
     environment:
-      - PUID=${PUID:?err}
-      - PGID=${PGID:?err}
+#      - PUID=${PUID:?err}
+#      - PGID=${PGID:?err}
       - TZ=${TIMEZONE:?err}
       - DOCKER_MODS=ghcr.io/themepark-dev/theme.park:mylar3
       - TP_THEME=${TP_THEME:?err}
@@ -711,9 +731,9 @@ services:
       - ${PATH_DATA:?err}/whisparr:/config
       - ${PATH_MEDIA:?err}:/data
     environment:
-      - PUID=${PUID:?err}
-      - PGID=${PGID:?err}
-      - UMASK=${UMASK:?err}
+#      - PUID=${PUID:?err}
+#      - PGID=${PGID:?err}
+#      - UMASK=${UMASK:?err}
       - TZ=${TIMEZONE:?err}
     networks:
       - media
@@ -772,9 +792,9 @@ services:
       - ${PATH_DATA:?err}/homepage:/app/config
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      - UMASK=${UMASK:?err}
+#      - UMASK=${UMASK:?err}
       - TZ=${TIMEZONE:?err}
-      - HOMEPAGE_ALLOWED_HOSTS=homepage,homepage.${CLOUDFLARE_DNS_ZONE:?err},${CLOUDFLARE_DNS_ZONE:?err},homepage.${INTRANET_DOMAIN:?err},${INTRANET_DOMAIN:?err},localhost,${LOCAL_DOCKER_IP:?err}
+#      - HOMEPAGE_ALLOWED_HOSTS=homepage,homepage.${CLOUDFLARE_DNS_ZONE:?err},${CLOUDFLARE_DNS_ZONE:?err},homepage.${INTRANET_DOMAIN:?err},${INTRANET_DOMAIN:?err},localhost,${LOCAL_DOCKER_IP:?err}
     networks:
       - media
     labels:

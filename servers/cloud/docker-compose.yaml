@@ -48,8 +48,8 @@ services:
     networks:
       - cloud
     environment:
-      - POSTGRES_HOST=${POSTGRES_HOST:?err}
-      - POSTGRES_DB=${POSTGRES_DB:?err}
+      - POSTGRES_HOST=postgresql
+      - NEXTCLOUD_DATABASE=${NEXTCLOUD_DATABASE:?err}
       - POSTGRES_USER=${POSTGRES_USER:?err}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?err}
 
@@ -68,7 +68,7 @@ services:
     environment:
       - DB_TYPE=postgres
       - DB_HOST=postgresql
-      - DB_NAME=${POSTGRES_DB:?err}
+      - DB_NAME=${NEXTCLOUD_DATABASE:?err}
       - DB_USER=${POSTGRES_USER:?err}
       - DB_PWD=${POSTGRES_PASSWORD:?err}
       - JWT_ENABLED=false
@@ -98,7 +98,7 @@ services:
     ports:
       - ${PORT_POSTGRES:?err}:5432
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -d ${POSTGRES_DB} -U ${POSTGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready -d ${NEXTCLOUD_DATABASE} -U ${POSTGRES_USER}"]
       start_period: 20s
       interval: 30s
       retries: 5
@@ -108,7 +108,7 @@ services:
       - postgresql-data:/var/lib/postgresql/data
     environment:
       - TZ=${TIMEZONE:?err}
-      - POSTGRES_DB=${POSTGRES_DB:?err}
+      - NEXTCLOUD_DATABASE=${NEXTCLOUD_DATABASE:?err}
       - POSTGRES_USER=${POSTGRES_USER:?err}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?err}
 
@@ -149,9 +149,8 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
-      # Redis del Gateway Server (Valkey)
       - "REDIS_ADDR=${INTRANET_GATEWAY_IP:?err}:${PORT_VALKEY:?err}"
       - "REDIS_DB=${VALKEY_TRAEFIK_KOP:?err}"
-      - "BIND_IP=${LOCAL_DOCKER_IP:?err}" # IP di questo server
+      - "BIND_IP=${LOCAL_DOCKER_IP:?err}"
     networks:
       - cloud

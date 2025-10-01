@@ -32,7 +32,7 @@ services:
     image: guacamole/guacamole
     container_name: guacamole
     restart: unless-stopped
-    user: ${PUID:?err}:${PGID:?err}
+#    user: ${PUID:?err}:${PGID:?err}
     depends_on:
       postgresql:
         condition: service_healthy
@@ -45,11 +45,11 @@ services:
       - TZ=${TIMEZONE:?err}
       - WEBAPP_CONTEXT=ROOT
       - GUACD_HOSTNAME=guacd
-      - PORT_POSTGRES=${PORT_POSTGRES:?err}
       - POSTGRESQL_HOSTNAME=postgresql
-      - POSTGRES_DB=${GUACAMOLE_DATABASE:?err}
+      - POSTGRESQL_PORT=${PORT_POSTGRES:?err}
+      - POSTGRESQL_DATABASE=${GUACAMOLE_DATABASE:?err}
       - POSTGRESQL_USER=${POSTGRES_USER:?err}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?err}
+      - POSTGRESQL_PASSWORD=${POSTGRES_PASSWORD:?err}
     labels:
       # Traefik configuration
       - traefik.enable=true
@@ -69,7 +69,7 @@ services:
     image: guacamole/guacd
     container_name: guacd
     restart: unless-stopped
-    user: ${PUID:?err}:${PGID:?err}
+#    user: ${PUID:?err}:${PGID:?err}
     depends_on:
       postgresql:
         condition: service_healthy
@@ -81,10 +81,10 @@ services:
     environment:
       - TZ=${TIMEZONE:?err}
       - POSTGRESQL_HOSTNAME=postgresql
-      - PORT_POSTGRES=${PORT_POSTGRES:?err}
-      - POSTGRES_DB=${GUACAMOLE_DATABASE:?err}
+      - POSTGRESQL_PORT=${PORT_POSTGRES:?err}
+      - POSTGRESQL_DATABASE=${GUACAMOLE_DATABASE:?err}
       - POSTGRESQL_USER=${POSTGRES_USER:?err}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?err}
+      - POSTGRESQL_PASSWORD=${POSTGRES_PASSWORD:?err}
 
   ###########################################################################
   # Valkey - High Performance Data Structure Server (Redis alternative)
@@ -96,7 +96,7 @@ services:
     restart: unless-stopped
     networks:
       - management
-    user: ${PUID:?err}:${PGID:?err}
+#    user: ${PUID:?err}:${PGID:?err}
     ports:
       - ${PORT_VALKEY:?err}:6379
     healthcheck:
@@ -116,7 +116,7 @@ services:
     image: prom/prometheus
     container_name: prometheus
     restart: unless-stopped
-    user: ${PUID:?err}:${PGID:?err}
+#    user: ${PUID:?err}:${PGID:?err}
     networks:
       - management
     ports:
@@ -145,7 +145,7 @@ services:
     image: grafana/grafana-enterprise
     container_name: grafana
     restart: unless-stopped
-    user: ${PUID:?err}:${PGID:?err}
+#    user: ${PUID:?err}:${PGID:?err}
     networks:
       - management
     ports:
@@ -209,7 +209,7 @@ services:
       - ssd-0:/mnt/ssd-0/
       - ${PATH_DATA:?err}/homepage:/app/config
     environment:
-      - UMASK=${UMASK:?err}
+      #- UMASK=${UMASK:?err}
       - TZ=${TIMEZONE:?err}
       - HOMEPAGE_ALLOWED_HOSTS=homepage.${CLOUDFLARE_DNS_ZONE:?err},homepage.${INTRANET_DOMAIN:?err},${INTRANET_DOMAIN:?err}:${PORT_HOMEPAGE:?err}
     networks:
@@ -233,7 +233,7 @@ services:
     image: semaphoreui/semaphore:latest
     container_name: semaphore
     restart: unless-stopped
-    user: ${PUID:?err}:${PGID:?err}
+#    user: ${PUID:?err}:${PGID:?err}
     depends_on:
       postgresql:
         condition: service_healthy
@@ -302,7 +302,7 @@ services:
     ports:
       - ${PORT_POSTGRES:?err}:5432
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -d $${AUTHENTIK_DATABASE} -U $${POSTGRES_USER}"]
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${AUTHENTIK_DATABASE}"]
       start_period: 20s
       interval: 30s
       retries: 5

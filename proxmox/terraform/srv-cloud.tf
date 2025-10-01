@@ -6,7 +6,7 @@ resource "proxmox_vm_qemu" "srv-cloud" {
     
     # VM General Settings
     target_node = "homelab"
-    vmid = "3300"
+    vmid = "3500"
     name = "srv-cloud"
     desc = "Ubuntu Cloud Server"
 
