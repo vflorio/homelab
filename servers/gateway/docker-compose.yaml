@@ -15,14 +15,8 @@ networks:
           gateway: ${DOCKER_GATEWAY:?err}
 
 volumes:
-  postgresql-data:
-  valkey-data:
-  ssd-0:
+  authentik-postgres-data:
     driver: local
-    driver_opts:
-      type: cifs
-      device: //${INTRANET_NAS_IP}/ssd-0
-      o: username=${SAMBA_USERNAME},password=${SAMBA_PASSWORD}
 
 services:
   ###########################################################################
@@ -45,9 +39,8 @@ services:
       - ${PORT_TRAEFIK_METRICS:?err}:8082
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ssd-0:/mnt/ssd-0/
       - ${PATH_DATA:?err}/logs/traefik:/var/log
-      - ${PATH_DATA:?err}/traefik:/etc/traefik
+      - ./traefik:/etc/traefik
     labels:
       - traefik.enable=true
       # Routers
@@ -75,7 +68,7 @@ services:
       - AUTHENTIK_LOG_LEVEL=info # info, warning, error, debug and trace
       - AUTHENTIK_SECRET_KEY=${AUTHENTIK_SECRET_KEY:?err}
       - AUTHENTIK_REDIS__HOST=valkey
-      - AUTHENTIK_POSTGRESQL__HOST=postgresql
+      - AUTHENTIK_POSTGRESQL__HOST=authentik-postgresql
       - AUTHENTIK_POSTGRESQL__NAME=${AUTHENTIK_DATABASE:?err}
       - AUTHENTIK_POSTGRESQL__USER=${POSTGRES_USER:?err}
       - AUTHENTIK_POSTGRESQL__PASSWORD=${POSTGRES_PASSWORD:?err}
@@ -89,13 +82,12 @@ services:
       - AUTHENTIK_EMAIL__FROM=${EMAIL_SENDER}
       - AUTHENTIK_EMAIL__TIMEOUT=10
     volumes:
-      - ssd-0:/mnt/ssd-0/
       - ${PATH_DATA:?err}/authentik/media:/media
       - ${PATH_DATA:?err}/authentik/templates:/templates
     ports:
       - ${PORT_AUTHENTIK:?err}:9000
     depends_on:
-      postgresql:
+      authentik-postgresql:
         condition: service_healthy
         restart: true
       valkey:
@@ -125,19 +117,18 @@ services:
       - TZ=${TIMEZONE:?err}
       - AUTHENTIK_SECRET_KEY=${AUTHENTIK_SECRET_KEY:?err}
       - AUTHENTIK_REDIS__HOST=valkey
-      - AUTHENTIK_POSTGRESQL__HOST=postgresql
+      - AUTHENTIK_POSTGRESQL__HOST=authentik-postgresql
       - AUTHENTIK_POSTGRESQL__NAME=${AUTHENTIK_DATABASE:?err}
       - AUTHENTIK_POSTGRESQL__USER=${POSTGRES_USER:?err}
       - AUTHENTIK_POSTGRESQL__PASSWORD=${POSTGRES_PASSWORD:?err}
       - AUTHENTIK_ERROR_REPORTING__ENABLED=${AUTHENTIK_ERROR_REPORTING__ENABLED:?err}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ssd-0:/mnt/ssd-0/
       - ${PATH_DATA:?err}/authentik/certs:/certs
       - ${PATH_DATA:?err}/authentik/media:/media
       - ${PATH_DATA:?err}/authentik/templates:/templates
     depends_on:
-      postgresql:
+      authentik-postgresql:
         condition: service_healthy
         restart: true
       valkey:
@@ -163,10 +154,9 @@ services:
     depends_on:
       - traefik
     volumes:
-      - ssd-0:/mnt/ssd-0/
-      - ${PATH_DATA:?err}/crowdsec:/etc/crowdsec
       - ${PATH_DATA:?err}/crowdsec/data:/var/lib/crowdsec/data/
-      - ${PATH_DATA:?err}/logs:/logs
+      - ${PATH_DATA:?err}/crowdsec/logs:/logs
+      - ./crowdsec/acquis.yaml:/etc/crowdsec/acquis.yaml
 
   ###########################################################################
   # Headscale - Self-hosted VPN Control Server
@@ -182,7 +172,6 @@ services:
       - ${PORT_HEADSCALE_CONNECT:?err}:8080
       - ${PORT_HEADSCALE_METRICS:?err}:9090
     volumes:
-      - ssd-0:/mnt/ssd-0/
       - ${PATH_DATA:?err}/headscale:/etc/headscale
       - ${PATH_DATA:?err}/headscale/data:/var/lib/headscale
     environment:
@@ -212,10 +201,9 @@ services:
       - ${PORT_HEADPLANE:?err}:3000
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ssd-0:/mnt/ssd-0/
-      - ${PATH_DATA:?err}/headscale:/etc/headscale
-      - ${PATH_DATA:?err}/headplane:/etc/headplane
       - ${PATH_DATA:?err}/headplane/data:/var/lib/headplane
+      - ./headscale:/etc/headscale
+      - ./headplane:/etc/headplane
     environment:
       - TZ=${TIMEZONE:?err}
     labels:
@@ -238,7 +226,6 @@ services:
     restart: always
 #    user: ${PUID:?err}:${PGID:?err}
     volumes:
-      - ssd-0:/mnt/ssd-0/
       - ${PATH_DATA:?err}/ddns-updater:/updater/data
     ports:
       - ${PORT_DDNS_UPDATER:?err}:${PORT_DDNS_UPDATER:?err}/tcp
@@ -306,9 +293,9 @@ services:
   ###########################################################################
   # PostgreSQL - Shared Database
   ###########################################################################
-  postgresql:
+  authentik-postgresql:
     image: docker.io/library/postgres:latest
-    container_name: postgresql
+    container_name: authentik-postgresql
     restart: unless-stopped
     networks:
       - gateway
@@ -322,8 +309,7 @@ services:
       retries: 5
       timeout: 5s
     volumes:
-      #- ${PATH_DATA:?err}/postgresql:/var/lib/postgresql/data # FIXME
-      - postgresql-data:/var/lib/postgresql/data
+      - authentik-postgres-data:/var/lib/postgresql/data
     environment:
       - TZ=${TIMEZONE:?err}
       - POSTGRES_DB=${AUTHENTIK_DATABASE:?err}
@@ -350,4 +336,4 @@ services:
       retries: 5
       timeout: 3s
     volumes:
-      - valkey-data:/data
+      - ${PATH_DATA:?err}/valkey:/data

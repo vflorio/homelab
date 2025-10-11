@@ -14,34 +14,6 @@ networks:
         - subnet: ${DOCKER_SUBNET:?err}
           gateway: ${DOCKER_GATEWAY:?err}
 
-volumes:
-  ssd-0:
-    driver: local
-    driver_opts:
-      type: cifs
-      device: //${INTRANET_NAS_IP}/ssd-0
-      o: username=${SAMBA_USERNAME},password=${SAMBA_PASSWORD}
-
-  media-0:
-    driver: local
-    driver_opts:
-      type: cifs
-      device: //${INTRANET_NAS_IP}/media-0
-      o: username=${SAMBA_USERNAME},password=${SAMBA_PASSWORD}
-      
-  media-1:
-    driver: local
-    driver_opts:
-      type: cifs
-      device: //${INTRANET_NAS_IP}/media-1
-      o: username=${SAMBA_USERNAME},password=${SAMBA_PASSWORD}
-  media-2:
-    driver: local
-    driver_opts:
-      type: cifs
-      device: //${INTRANET_NAS_IP}/media-2
-      o: username=${SAMBA_USERNAME},password=${SAMBA_PASSWORD}
-
 services:
   ###########################################################################
   # Jellyfin - Media Streaming Server
@@ -51,10 +23,7 @@ services:
     container_name: jellyfin
     restart: unless-stopped
     volumes:
-      - ssd-0:/mnt/ssd-0/
-      - media-0:/mnt/media-0/
-      - media-1:/mnt/media-1/
-      - media-2:/mnt/media-2/
+      - ${PATH_MEDIA:?err}:/mnt/media/
       - ${PATH_DATA:?err}/jellyfin:/config
     environment:
 #      - PUID=${PUID:?err}
@@ -86,11 +55,11 @@ services:
     networks:
       - media
     volumes:
-      - ssd-0:/mnt/ssd-0/
+      - ${PATH_MEDIA:?err}:/mnt/media/
+      - ${PATH_DATA:?err}/jellyseerr:/app/config
     environment:
 #      - PUID=${PUID:?err}
 #      - PGID=${PGID:?err}
-      - ${PATH_DATA:?err}/jellyseerr:/app/config
 #      - UMASK=${UMASK:?err}
       - TZ=${TIMEZONE:?err}
     ports:
@@ -114,12 +83,8 @@ services:
     container_name: qbittorrent
     restart: unless-stopped
     volumes:
-      - ssd-0:/mnt/ssd-0/
-      - media-0:/mnt/media/media-0/
-      - media-1:/mnt/media/media-1/
-      - media-2:/mnt/media/media-2/
-      - ${PATH_DATA:?err}/qbittorrent:/config
       - ${PATH_MEDIA:?err}:/data
+      - ${PATH_DATA:?err}/qbittorrent:/config
     environment:
 #      - PUID=${PUID:?err}
 #      - PGID=${PGID:?err}
@@ -151,10 +116,6 @@ services:
     container_name: sabnzbd
     restart: unless-stopped
     volumes:
-      - ssd-0:/mnt/ssd-0/
-      - media-0:/mnt/media/media-0/
-      - media-1:/mnt/media/media-1/
-      - media-2:/mnt/media/media-2/
       - ${PATH_DATA:?err}/sabnzbd:/config
       - ${PATH_MEDIA:?err}:/data
     environment:
@@ -186,7 +147,6 @@ services:
     container_name: prowlarr
     restart: unless-stopped
     volumes:
-      - ssd-0:/mnt/ssd-0/
       - ${PATH_DATA:?err}/prowlarr:/config
     environment:
 #      - PUID=${PUID:?err}
@@ -217,10 +177,6 @@ services:
     container_name: sonarr
     restart: unless-stopped
     volumes:
-      - ssd-0:/mnt/ssd-0/
-      - media-0:/mnt/media/media-0/
-      - media-1:/mnt/media/media-1/
-      - media-2:/mnt/media/media-2/
       - ${PATH_DATA:?err}/sonarr:/config
       - ${PATH_MEDIA:?err}:/data
     environment:
@@ -252,10 +208,6 @@ services:
     container_name: radarr
     restart: unless-stopped
     volumes:
-      - ssd-0:/mnt/ssd-0/
-      - media-0:/mnt/media/media-0/
-      - media-1:/mnt/media/media-1/
-      - media-2:/mnt/media/media-2/
       - ${PATH_DATA:?err}/radarr:/config
       - ${PATH_MEDIA:?err}:/data
     environment:
@@ -287,10 +239,6 @@ services:
     container_name: lidarr
     restart: unless-stopped
     volumes:
-      - ssd-0:/mnt/ssd-0/
-      - media-0:/mnt/media/media-0/
-      - media-1:/mnt/media/media-1/
-      - media-2:/mnt/media/media-2/
       - ${PATH_DATA:?err}/lidarr:/config
       - ${PATH_MEDIA:?err}:/data
     environment:
@@ -322,10 +270,6 @@ services:
     container_name: readarr
     restart: unless-stopped
     volumes:
-      - ssd-0:/mnt/ssd-0/
-      - media-0:/mnt/media/media-0/
-      - media-1:/mnt/media/media-1/
-      - media-2:/mnt/media/media-2/
       - ${PATH_DATA:?err}/readarr:/config
       - ${PATH_MEDIA:?err}:/data
     environment:
@@ -357,10 +301,6 @@ services:
     container_name: bazarr
     restart: unless-stopped
     volumes:
-      - ssd-0:/mnt/ssd-0/
-      - media-0:/mnt/media/media-0/
-      - media-1:/mnt/media/media-1/
-      - media-2:/mnt/media/media-2/
       - ${PATH_DATA:?err}/bazarr:/config
       - ${PATH_MEDIA:?err}:/data
     environment:
@@ -420,16 +360,12 @@ services:
     restart: unless-stopped
 #    user: ${PUID:?err}:${PGID:?err}
     volumes:
-      - ssd-0:/mnt/ssd-0/
-      - media-0:/mnt/media/media-0/
-      - media-1:/mnt/media/media-1/
-      - media-2:/mnt/media/media-2/
       - ${PATH_DATA:?err}/unpackerr:/config
+      - ${PATH_DATA:?err}/unpackerr/logs:/var/log
       - ${PATH_MEDIA:?err}:/data
     networks:
       - media
     ports:
-      - ${PATH_DATA:?err}/logs/unpackerr:/var/log
       - ${PORT_UNPACKERR_METRICS:?err}:5656
     environment:
 #      - UMASK=${UMASK:?err}
@@ -562,10 +498,6 @@ services:
     container_name: filebot
     restart: unless-stopped
     volumes:
-      - ssd-0:/mnt/ssd-0/
-      - media-0:/mnt/media/media-0/
-      - media-1:/mnt/media/media-1/
-      - media-2:/mnt/media/media-2/
       - ${PATH_DATA:?err}/filebot:/data/filebot
       - ${PATH_MEDIA:?err}/filebot:/filebot
     environment:
@@ -598,10 +530,6 @@ services:
     container_name: tdarr
     restart: unless-stopped
     volumes:
-      - ssd-0:/mnt/ssd-0/
-      - media-0:/mnt/media/media-0/
-      - media-1:/mnt/media/media-1/
-      - media-2:/mnt/media/media-2/
       - ${PATH_MEDIA:?err}/media:/data
       - ${PATH_DATA:?err}/tdarr/server:/app/server
       - ${PATH_DATA:?err}/tdarr/configs:/app/configs
@@ -613,15 +541,15 @@ services:
 #      - UMASK=${UMASK:?err}
       - TZ=${TIMEZONE:?err}
       - serverIP=0.0.0.0
-      - serverPort=${PORT_TDARRT:?err}
+      - serverPort=${PORT_TDARR:?err}
       - webUIPort=${PORT_TDARR_WEB:?err}
       - internalNode=true
       - nodeID=Tdarr_Server
     networks:
       - media
     ports:
-      - ${PORT_TDARR:?err}:8265
-      - ${PORT_TDARR:?err}:${PORT_TDARR:?err}
+      - ${PORT_TDARR_WEB:?err}:8265
+      - ${PORT_TDARR:?err}:8266
     labels:
       - traefik.enable=true
         # Routers
@@ -637,10 +565,10 @@ services:
     container_name: tdarr-node
     restart: unless-stopped
     volumes:
-      - ${FOLDER_FOR_MEDIA:?err}/media:/data
-      - ${FOLDER_FOR_DATA:?err}/tdarr/configs:/app/configs
-      - ${FOLDER_FOR_DATA:?err}/tdarr/logs:/app/logs
-      - ${FOLDER_FOR_DATA:?err}/tdarr-node:/temp
+      - ${PATH_MEDIA:?err}/media:/data
+      - ${PATH_DATA:?err}/tdarr/configs:/app/configs
+      - ${PATH_DATA:?err}/tdarr/logs:/app/logs
+      - ${PATH_DATA:?err}/tdarr-node:/temp
     environment:
 #      - PUID=${PUID:?err}
 #      - PGID=${PGID:?err}
@@ -648,7 +576,7 @@ services:
       - TZ=${TIMEZONE:?err}
       - nodeID=Tdarr_Node_1
       - serverIP=0.0.0.0
-      - serverPort=${PORT_TDARRT:?err}
+      - serverPort=${PORT_TDARR:?err}
     networks:
       - media
 
@@ -660,7 +588,6 @@ services:
     image: huntarr/huntarr:latest
     container_name: huntarr
     volumes:
-      - ssd-0:/mnt/ssd-0/
       - ${PATH_DATA:?err}/huntarr:/config
     environment:
 #      - PUID=${PUID:?err}
@@ -689,10 +616,6 @@ services:
     container_name: mylar
     restart: unless-stopped
     volumes:
-      - ssd-0:/mnt/ssd-0/
-      - media-0:/mnt/media/media-0/
-      - media-1:/mnt/media/media-1/
-      - media-2:/mnt/media/media-2/
       - ${PATH_DATA:?err}/mylar:/config
       - ${PATH_MEDIA:?err}:/data
     environment:
@@ -724,10 +647,6 @@ services:
     container_name: whisparr
     restart: unless-stopped
     volumes:
-      - ssd-0:/mnt/ssd-0/
-      - media-0:/mnt/media/media-0/
-      - media-1:/mnt/media/media-1/
-      - media-2:/mnt/media/media-2/
       - ${PATH_DATA:?err}/whisparr:/config
       - ${PATH_MEDIA:?err}:/data
     environment:
@@ -757,7 +676,6 @@ services:
     container_name: portainer-agent
     image: "portainer/agent:latest"
     volumes:
-      - ssd-0:/mnt/ssd-0/
       - /var/run/docker.sock:/var/run/docker.sock
       - /var/lib/docker/volumes:/var/lib/docker/volumes
     restart: unless-stopped
@@ -779,36 +697,6 @@ services:
       - media
 
   ###########################################################################
-  # Homepage - Docker Container Dashboard
-  ###########################################################################
-  homepage:
-    image: ghcr.io/gethomepage/homepage:latest
-    container_name: homepage
-    restart: unless-stopped
-    ports:
-      - ${PORT_HOMEPAGE:?err}:3000
-    volumes:
-      - ssd-0:/mnt/ssd-0/
-      - ${PATH_DATA:?err}/homepage:/app/config
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-#      - UMASK=${UMASK:?err}
-      - TZ=${TIMEZONE:?err}
-#      - HOMEPAGE_ALLOWED_HOSTS=homepage,homepage.${CLOUDFLARE_DNS_ZONE:?err},${CLOUDFLARE_DNS_ZONE:?err},homepage.${INTRANET_DOMAIN:?err},${INTRANET_DOMAIN:?err},localhost,${LOCAL_DOCKER_IP:?err}
-    networks:
-      - media
-    labels:
-      - traefik.enable=true
-        # Routers
-      - traefik.http.routers.homepage.service=homepage
-      - traefik.http.routers.homepage.rule=Host(`homepage.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`homepage.${INTRANET_DOMAIN:?err}`)
-      - traefik.http.routers.homepage.entrypoints=websecure
-      - traefik.http.routers.homepage.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-        # Services
-      - traefik.http.services.homepage.loadbalancer.server.scheme=http
-      - traefik.http.services.homepage.loadbalancer.server.port=3000
-
-  ###########################################################################
   # Traefik-KOP - Service Discovery Agent
   ###########################################################################
   traefik-kop:
@@ -816,7 +704,6 @@ services:
     container_name: traefik-kop
     restart: unless-stopped
     volumes:
-      - ssd-0:/mnt/ssd-0/
       - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
       - "REDIS_ADDR=${INTRANET_GATEWAY_IP:?err}:${PORT_VALKEY:?err}"

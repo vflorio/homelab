@@ -29,7 +29,7 @@ headscale:
 
   # Optional, public URL if they differ
   # This affects certain parts of the web UI
-  public_url: "https://headscale.srv-demo-1.intranet.vflorio.com"
+  public_url: "https://headscale.vflorio.com"
 
   # Path to the Headscale configuration file
   # This is optional, but HIGHLY recommended for the best experience

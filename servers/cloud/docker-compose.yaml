@@ -14,13 +14,8 @@ networks:
           gateway: ${DOCKER_GATEWAY:?err}
 
 volumes:
-  postgresql-data:
-  ssd-0:
+  nextcloud-postgres-data:
     driver: local
-    driver_opts:
-      type: cifs
-      device: //${INTRANET_NAS_IP}/ssd-0
-      o: username=${SAMBA_USERNAME},password=${SAMBA_PASSWORD}
 
 services:
   ###########################################################################
@@ -31,7 +26,6 @@ services:
     container_name: nextcloud
     restart: unless-stopped
     volumes:
-      - ssd-0:/mnt/ssd-0/
       - ${PATH_DATA:?err}/nextcloud:/var/www/html/data
     ports:
       - "${PORT_NEXTCLOUD:?err}:80"
@@ -48,7 +42,7 @@ services:
     networks:
       - cloud
     environment:
-      - POSTGRES_HOST=postgresql
+      - POSTGRES_HOST=nextcloud-postgresql
       - NEXTCLOUD_DATABASE=${NEXTCLOUD_DATABASE:?err}
       - POSTGRES_USER=${POSTGRES_USER:?err}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?err}
@@ -67,7 +61,7 @@ services:
       - ${PATH_DATA:?err}/onlyoffice/logs:/var/log/onlyoffice
     environment:
       - DB_TYPE=postgres
-      - DB_HOST=postgresql
+      - DB_HOST=nextcloud-postgresql
       - DB_NAME=${NEXTCLOUD_DATABASE:?err}
       - DB_USER=${POSTGRES_USER:?err}
       - DB_PWD=${POSTGRES_PASSWORD:?err}
@@ -88,9 +82,9 @@ services:
   ###########################################################################
   # PostgreSQL - Shared Database
   ###########################################################################
-  postgresql:
+  nextcloud-postgresql:
     image: docker.io/library/postgres:latest
-    container_name: postgresql
+    container_name: nextcloud-postgresql
     restart: unless-stopped
     networks:
       - cloud
@@ -104,8 +98,7 @@ services:
       retries: 5
       timeout: 5s
     volumes:
-      #- ${PATH_DATA:?err}/postgresql:/var/lib/postgresql/data # FIXME
-      - postgresql-data:/var/lib/postgresql/data
+      - nextcloud-postgres-data:/var/lib/postgresql/data
     environment:
       - TZ=${TIMEZONE:?err}
       - NEXTCLOUD_DATABASE=${NEXTCLOUD_DATABASE:?err}

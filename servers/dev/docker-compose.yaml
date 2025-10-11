@@ -15,16 +15,9 @@ networks:
 
 volumes:
   postgresql-data:
-  coder-data:
   gitea-data:
   registry-data:
   verdaccio-data:
-  ssd-0:
-    driver: local
-    driver_opts:
-      type: cifs
-      device: //${INTRANET_NAS_IP}/ssd-0
-      o: username=${SAMBA_USERNAME},password=${SAMBA_PASSWORD}
 
 services:
   ###########################################################################
@@ -81,10 +74,9 @@ services:
       - "${PORT_CODER:?err}:7080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - coder-data:/home/coder/.config
-      - ssd-0:/mnt/ssd-0/
+      - ${PATH_DATA:?err}/coder/config:/home/coder/.config
+      - ${PATH_DATA:?err}/coder/workspaces:/workspaces
       - ./templates:/templates
-      - ${PATH_DATA:?err}/coder:/workspaces
     group_add:
       - "${DOCKER_GROUP:-988}"
     user: "0:0"
@@ -137,8 +129,7 @@ services:
       - "${PORT_GITEA:?err}:3000"
       - "${PORT_GITEA_SSH:?err}:22"
     volumes:
-      - gitea-data:/data
-      - ssd-0:/data/git/repositories
+      - ${PATH_DATA:?err}/gitea:/data
     environment:
       - GITEA__database__DB_TYPE=postgres
       - GITEA__database__HOST=postgres:5432
@@ -173,8 +164,7 @@ services:
     ports:
       - "${PORT_REGISTRY:?err}:5000"
     volumes:
-      - registry-data:/var/lib/registry
-      - ssd-0:/var/lib/registry/docker
+      - ${PATH_DATA:?err}/container-registry:/var/lib/registry/docker
     environment:
       - REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/var/lib/registry
       - REGISTRY_AUTH=htpasswd
@@ -185,7 +175,7 @@ services:
       # ROUTERS
       - traefik.http.routers.registry.service=registry
       - traefik.http.routers.registry.entrypoints=websecure
-      - traefik.http.routers.registry.rule=Host(`registry.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`registry.${INTRANET_DOMAIN:?err}`)
+      - traefik.http.routers.registry.rule=Host(`container-registry.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`container-registry.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.registry.middlewares=security-headers@file,traefik-bouncer@file
       # SERVICES
       - traefik.http.services.registry.loadbalancer.server.scheme=http
@@ -203,8 +193,7 @@ services:
     ports:
       - "${PORT_VERDACCIO:?err}:4873"
     volumes:
-      - verdaccio-data:/verdaccio/storage
-      - ssd-0:/verdaccio/packages
+      - ${PATH_DATA:?err}/verdaccio:/verdaccio
     environment:
       - VERDACCIO_USER_NAME=${VERDACCIO_USER:?err}
       - VERDACCIO_USER_PWD=${VERDACCIO_PASSWORD:?err}

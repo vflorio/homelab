@@ -10,7 +10,7 @@
 #
 # https://myheadscale.srv-demo-1.intranet.vflorio.com:443
 #
-server_url: https://headscale.srv-demo-1.intranet.vflorio.com
+server_url: https://headscale.vflorio.com
 
 # Address to listen to / bind to on the server
 #

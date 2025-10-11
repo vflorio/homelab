@@ -34,3 +34,14 @@ autoinstall:
     - vim
     - zip
     - unzip
+    - nfs-common
+  runcmd:
+    - mkdir -p /mnt/nfs/media-0
+    - mkdir -p /mnt/nfs/media-1
+    - mkdir -p /mnt/nfs/media-2
+    - mkdir -p /mnt/nfs/ssd-0
+    - echo "nas.intranet.vflorio.com:/media-0 /mnt/nfs/media-0 nfs defaults,rw,_netdev 0 0" >> /etc/fstab
+    - echo "nas.intranet.vflorio.com:/media-1 /mnt/nfs/media-1 nfs defaults,rw,_netdev 0 0" >> /etc/fstab
+    - echo "nas.intranet.vflorio.com:/media-2 /mnt/nfs/media-2 nfs defaults,rw,_netdev 0 0" >> /etc/fstab
+    - echo "nas.intranet.vflorio.com:/ssd-0 /mnt/nfs/ssd-0 nfs defaults,rw,_netdev 0 0" >> /etc/fstab
+    - systemctl daemon-reload

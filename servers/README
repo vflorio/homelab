@@ -27,3 +27,6 @@ ssh vflorio@management.intranet.vflorio.com "cd ~/management && docker compose d
 ssh vflorio@media.intranet.vflorio.com "cd ~/media && docker compose down"
 ssh vflorio@dev.intranet.vflorio.com "cd ~/dev && docker compose down"
 ssh vflorio@cloud.intranet.vflorio.com "cd ~/cloud && docker compose down"
+
+
+rsync -avz --progress --delete --mkpath ./servers/gateway/ vflorio@gateway.intranet.vflorio.com:~/gateway/ && ssh vflorio@gateway.intranet.vflorio.com "cd ~/gateway && docker compose up -d"

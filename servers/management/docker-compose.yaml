@@ -16,12 +16,6 @@ networks:
 
 volumes:
   postgresql-data:
-  ssd-0:
-    driver: local
-    driver_opts:
-      type: cifs
-      device: //${INTRANET_NAS_IP}/ssd-0
-      o: username=${SAMBA_USERNAME},password=${SAMBA_PASSWORD}
 
 services:
 
@@ -32,7 +26,7 @@ services:
     image: guacamole/guacamole
     container_name: guacamole
     restart: unless-stopped
-#    user: ${PUID:?err}:${PGID:?err}
+    #user: ${PUID:?err}:${PGID:?err}
     depends_on:
       postgresql:
         condition: service_healthy
@@ -69,7 +63,7 @@ services:
     image: guacamole/guacd
     container_name: guacd
     restart: unless-stopped
-#    user: ${PUID:?err}:${PGID:?err}
+    #user: ${PUID:?err}:${PGID:?err}
     depends_on:
       postgresql:
         condition: service_healthy
@@ -87,42 +81,18 @@ services:
       - POSTGRESQL_PASSWORD=${POSTGRES_PASSWORD:?err}
 
   ###########################################################################
-  # Valkey - High Performance Data Structure Server (Redis alternative)
-  ###########################################################################
-  valkey:
-    image: valkey/valkey:alpine
-    container_name: valkey
-    command: --save 60 1 --loglevel warning
-    restart: unless-stopped
-    networks:
-      - management
-#    user: ${PUID:?err}:${PGID:?err}
-    ports:
-      - ${PORT_VALKEY:?err}:6379
-    healthcheck:
-      test: ["CMD-SHELL", "valkey-cli ping | grep PONG"]
-      start_period: 20s
-      interval: 30s
-      retries: 5
-      timeout: 3s
-    volumes:
-      - ssd-0:/mnt/ssd-0/
-      - ${PATH_DATA:?err}/valkey:/data
-
-  ###########################################################################
   # Prometheus - Metrics Collection & Monitoring
   ###########################################################################
   prometheus:
     image: prom/prometheus
     container_name: prometheus
     restart: unless-stopped
-#    user: ${PUID:?err}:${PGID:?err}
+    #user: ${PUID:?err}:${PGID:?err}
     networks:
       - management
     ports:
       - 127.0.0.1:${PORT_PROMETHEUS:?err}:9090
     volumes:
-      - ssd-0:/mnt/ssd-0/
       - ${PATH_DATA:?err}/prometheus:/prometheus
     environment:
       - TZ=${TIMEZONE:?err}
@@ -145,14 +115,13 @@ services:
     image: grafana/grafana-enterprise
     container_name: grafana
     restart: unless-stopped
-#    user: ${PUID:?err}:${PGID:?err}
+    #user: ${PUID:?err}:${PGID:?err}
     networks:
       - management
     ports:
       - ${PORT_GRAFANA:?err}:3000
     volumes:
       - /var/log:/var/dockerhost:ro
-      - ssd-0:/mnt/ssd-0/
       - ${PATH_DATA:?err}/grafana:/var/lib/grafana
     environment:
       - TZ=${TIMEZONE:?err}
@@ -177,7 +146,6 @@ services:
     restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ssd-0:/mnt/ssd-0/
       - ${PATH_DATA:?err}/portainer:/data
     ports:
       - ${PORT_PORTAINER:?err}:9000
@@ -206,7 +174,6 @@ services:
       - ${PORT_HOMEPAGE:?err}:3000
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ssd-0:/mnt/ssd-0/
       - ${PATH_DATA:?err}/homepage:/app/config
     environment:
       #- UMASK=${UMASK:?err}
@@ -233,7 +200,7 @@ services:
     image: semaphoreui/semaphore:latest
     container_name: semaphore
     restart: unless-stopped
-#    user: ${PUID:?err}:${PGID:?err}
+    #user: ${PUID:?err}:${PGID:?err}
     depends_on:
       postgresql:
         condition: service_healthy
@@ -250,11 +217,10 @@ services:
       timeout: 10s
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ssd-0:/mnt/ssd-0/
       - ${PATH_DATA:?err}/semaphore/config:/etc/semaphore:rw
       - ${PATH_DATA:?err}/semaphore/tmp:/tmp/semaphore:rw
-      - ${PATH_DATA:?err}/ansible:/ansible:ro # TODO Mount ansible playbooks
-      - ${PATH_DATA:?err}/ssh:/root/.ssh:ro   # TODO SSH keys for remote access
+      # - ${PATH_DATA:?err}/ansible:/ansible:ro # FIXME Mount ansible playbooks
+      # - ${PATH_DATA:?err}/ssh:/root/.ssh:ro   # FIXME SSH keys for remote access
     environment:
       - TZ=${TIMEZONE:?err}
       # Database configuration (PostgreSQL)
