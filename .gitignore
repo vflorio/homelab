@@ -10,6 +10,7 @@ terraform/templates
 dns/bind/*.jnl
 
 *.old
+*.old.*
 .env
 *.tfvars
 *.pkrvars.hcl

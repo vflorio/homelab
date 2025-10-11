@@ -1,0 +1,14 @@
+## Configurazione Iniziale Coder
+
+```bash
+chmod +x ./update-docker-group.sh
+
+./update-docker-group.sh
+
+# Crea il primo admin user
+docker exec -it coder coder login
+
+# Carica il template
+docker exec -it coder coder templates push --name homelab-dev --directory /templates/
+
+```
