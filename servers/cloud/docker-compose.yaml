@@ -43,7 +43,7 @@ services:
       - cloud
     environment:
       - POSTGRES_HOST=nextcloud-postgresql
-      - NEXTCLOUD_DATABASE=${NEXTCLOUD_DATABASE:?err}
+      - POSTGRES_DB=${NEXTCLOUD_DATABASE:?err}
       - POSTGRES_USER=${POSTGRES_USER:?err}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?err}
 
@@ -101,7 +101,7 @@ services:
       - nextcloud-postgres-data:/var/lib/postgresql/data
     environment:
       - TZ=${TIMEZONE:?err}
-      - NEXTCLOUD_DATABASE=${NEXTCLOUD_DATABASE:?err}
+      - POSTGRES_DB=${NEXTCLOUD_DATABASE:?err}
       - POSTGRES_USER=${POSTGRES_USER:?err}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?err}
 
@@ -117,8 +117,8 @@ services:
     restart: unless-stopped
     ports:
       - "${PORT_PORTAINER_AGENT:?err}:9001"
-    #environment:
-    #  AGENT_CLUSTER_ADDR: "192.168.1.171"  # IP srv-prod-1
+    environment:
+      - AGENT_CLUSTER_ADDR="192.168.1.191"
     labels:
       - traefik.enable=true
       # ROUTERS

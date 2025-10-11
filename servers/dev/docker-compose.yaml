@@ -32,8 +32,8 @@ services:
     restart: unless-stopped
     ports:
       - "${PORT_PORTAINER_AGENT:?err}:9001"
-    #environment:
-    #  AGENT_CLUSTER_ADDR: "192.168.1.171"  # IP srv-prod-1
+    environment:
+      - AGENT_CLUSTER_ADDR="192.168.1.191"
     labels:
       - traefik.enable=true
       # ROUTERS
@@ -136,9 +136,9 @@ services:
       - GITEA__database__NAME=${POSTGRES_DB:?err}
       - GITEA__database__USER=${POSTGRES_USER:?err}
       - GITEA__database__PASSWD=${POSTGRES_PASSWORD:?err}
-      - GITEA__server__DOMAIN=gitea.${INTRANET_DOMAIN:?err}
-      - GITEA__server__SSH_DOMAIN=gitea.${INTRANET_DOMAIN:?err}
-      - GITEA__server__ROOT_URL=https://gitea.${INTRANET_DOMAIN:?err}/
+      - GITEA__server__DOMAIN=gitea.${CLOUDFLARE_DNS_ZONE:?err}
+      - GITEA__server__SSH_DOMAIN=gitea.${CLOUDFLARE_DNS_ZONE:?err}
+      - GITEA__server__ROOT_URL=https://gitea.${CLOUDFLARE_DNS_ZONE:?err}/
     depends_on:
       - postgres
     labels:

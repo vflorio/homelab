@@ -9,6 +9,7 @@ chmod +x ./update-docker-group.sh
 docker exec -it coder coder login
 
 # Carica il template
-docker exec -it coder coder templates push --name homelab-dev --directory /templates/
+docker exec -it coder coder templates push --directory /templates/docker
+docker exec -it coder coder templates push --directory /templates/homelab-dev
 
 ```

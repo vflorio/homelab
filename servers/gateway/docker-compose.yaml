@@ -28,7 +28,7 @@ services:
     restart: unless-stopped
     networks:
       - gateway
-    user: root
+    #user: root
     environment:
       - TZ=${TIMEZONE:?err}
       - CF_DNS_API_TOKEN=${CLOUDFLARE_DNS_API_TOKEN:?err}
@@ -40,6 +40,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ${PATH_DATA:?err}/logs/traefik:/var/log
+      - ${PATH_DATA:?err}/traefik/letsencrypt/:/letsencrypt/
       - ./traefik:/etc/traefik
     labels:
       - traefik.enable=true
@@ -172,8 +173,8 @@ services:
       - ${PORT_HEADSCALE_CONNECT:?err}:8080
       - ${PORT_HEADSCALE_METRICS:?err}:9090
     volumes:
-      - ${PATH_DATA:?err}/headscale:/etc/headscale
-      - ${PATH_DATA:?err}/headscale/data:/var/lib/headscale
+      - ./headscale:/etc/headscale
+      - ${PATH_DATA:?err}/headscale:/var/lib/headscale
     environment:
       - TZ=${TIMEZONE:?err}
     labels:
@@ -277,6 +278,8 @@ services:
     restart: unless-stopped
     ports:
       - "${PORT_PORTAINER_AGENT:?err}:9001"
+    environment:
+      - AGENT_CLUSTER_ADDR="192.168.1.191"
     labels:
       - traefik.enable=true
       # Routers

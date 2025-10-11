@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-POSTGRESQL_CONTAINER="postgresql"
+POSTGRESQL_CONTAINER="authentik-postgresql"
 ENV_FILE=".env"
 
 # Check if .env exists
@@ -46,5 +46,5 @@ EOF
 
 echo 
 echo 
-sudo docker exec postgresql psql -U "$POSTGRES_USER" -l
+sudo docker exec $POSTGRESQL_CONTAINER psql -U "$POSTGRES_USER" -l
 echo 

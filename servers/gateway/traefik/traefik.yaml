@@ -71,16 +71,19 @@ providers:
 certificatesResolvers:
   letsencrypt:
     acme:
-      storage: /etc/traefik/acme.json
+      storage: /letsencrypt/acme.json
       keyType: EC384
-      caServer: https://acme-v02.api.letsencrypt.org/directory
+      # Production
+      # caServer: https://acme-v02.api.letsencrypt.org/directory
+      # Staging
+      caServer: https://acme-staging-v02.api.letsencrypt.org/directory 
       dnsChallenge:
         provider: cloudflare
         resolvers:
           - 1.1.1.1:53
           - 1.0.0.1:53
-        propagation:
-          delayBeforeChecks: 2s
+        #propagation:
+        #  delayBeforeChecks: 2s
 
 experimental:
   plugins:

@@ -681,8 +681,8 @@ services:
     restart: unless-stopped
     ports:
       - "${PORT_PORTAINER_AGENT:?err}:9001"
-    #environment:
-    #  AGENT_CLUSTER_ADDR: "192.168.1.171"  # IP srv-prod-1
+    environment:
+      - AGENT_CLUSTER_ADDR="192.168.1.191"
     labels:
       - traefik.enable=true
         # Routers
