@@ -23,8 +23,11 @@ services:
     container_name: jellyfin
     restart: unless-stopped
     volumes:
-      - ${PATH_MEDIA:?err}:/mnt/media/
+      - ${PATH_MEDIA:?err}/media-0:/mnt/media-0/
+      - ${PATH_MEDIA:?err}/media-1:/mnt/media-1/
+      - ${PATH_MEDIA:?err}/media-2:/mnt/media-2/
       - ${PATH_DATA:?err}/jellyfin:/config
+      #- ${PATH_MEDIA:?err}:/mnt/media/ # FIXME non vengono risolti i link simbolici
     environment:
 #      - PUID=${PUID:?err}
 #      - PGID=${PGID:?err}
@@ -36,14 +39,12 @@ services:
       - ${PORT_JELLYFIN:?err}:8096
     labels:
       - traefik.enable=true
-        # Routers
       - traefik.http.routers.jellyfin.service=jellyfin
       - traefik.http.routers.jellyfin.rule=Host(`jellyfin.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`jellyfin.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.jellyfin.entrypoints=websecure
       - traefik.http.routers.jellyfin.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-        # Services
       - traefik.http.services.jellyfin.loadbalancer.server.scheme=http
-      - traefik.http.services.jellyfin.loadbalancer.server.port=8096
+      - traefik.http.services.jellyfin.loadbalancer.server.port=${PORT_JELLYFIN:?err}
 
   ###########################################################################
   # Jellyseerr - Media Request Management
@@ -66,14 +67,12 @@ services:
       - ${PORT_JELLYSEERR:?err}:5055
     labels:
       - traefik.enable=true
-        # Routers
       - traefik.http.routers.jellyseerr.service=jellyseerr
       - traefik.http.routers.jellyseerr.rule=Host(`jellyseerr.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`jellyseerr.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.jellyseerr.entrypoints=websecure
       - traefik.http.routers.jellyseerr.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-        # Services
       - traefik.http.services.jellyseerr.loadbalancer.server.scheme=http
-      - traefik.http.services.jellyseerr.loadbalancer.server.port=5055
+      - traefik.http.services.jellyseerr.loadbalancer.server.port=${PORT_JELLYSEERR:?err}
 
   ###########################################################################
   # qBittorrent - Torrent Client
@@ -83,7 +82,7 @@ services:
     container_name: qbittorrent
     restart: unless-stopped
     volumes:
-      - ${PATH_MEDIA:?err}:/data
+      - ${PATH_MEDIA:?err}:/media
       - ${PATH_DATA:?err}/qbittorrent:/config
     environment:
 #      - PUID=${PUID:?err}
@@ -99,12 +98,10 @@ services:
       - ${PORT_QBITTORRENT:?err}:8200
     labels:
       - traefik.enable=true
-      # Routers
       - traefik.http.routers.qbittorrent.service=qbittorrent
       - traefik.http.routers.qbittorrent.rule=Host(`qbittorrent.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`qbittorrent.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.qbittorrent.entrypoints=websecure
       - traefik.http.routers.qbittorrent.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-      # Services
       - traefik.http.services.qbittorrent.loadbalancer.server.scheme=http
       - traefik.http.services.qbittorrent.loadbalancer.server.port=${PORT_QBITTORRENT:?err}
 
@@ -117,7 +114,7 @@ services:
     restart: unless-stopped
     volumes:
       - ${PATH_DATA:?err}/sabnzbd:/config
-      - ${PATH_MEDIA:?err}:/data
+      - ${PATH_MEDIA:?err}:/media
     environment:
 #      - PUID=${PUID:?err}
 #      - PGID=${PGID:?err}
@@ -130,14 +127,12 @@ services:
       - ${PORT_SABNZBD:?err}:8080
     labels:
       - traefik.enable=true
-        # Routers
       - traefik.http.routers.sabnzbd.service=sabnzbd
       - traefik.http.routers.sabnzbd.rule=Host(`sabnzbd.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`sabnzbd.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.sabnzbd.entrypoints=websecure
       - traefik.http.routers.sabnzbd.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-        # Services
       - traefik.http.services.sabnzbd.loadbalancer.server.scheme=http
-      - traefik.http.services.sabnzbd.loadbalancer.server.port=8080
+      - traefik.http.services.sabnzbd.loadbalancer.server.port=${PORT_SABNZBD:?err}
 
   ###########################################################################
   # Prowlarr - Indexer Management
@@ -160,14 +155,12 @@ services:
       - ${PORT_PROWLARR:?err}:9696
     labels:
       - traefik.enable=true
-        # Routers
       - traefik.http.routers.prowlarr.service=prowlarr
       - traefik.http.routers.prowlarr.rule=Host(`prowlarr.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`prowlarr.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.prowlarr.entrypoints=websecure
       - traefik.http.routers.prowlarr.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-        # Services
       - traefik.http.services.prowlarr.loadbalancer.server.scheme=http
-      - traefik.http.services.prowlarr.loadbalancer.server.port=9696
+      - traefik.http.services.prowlarr.loadbalancer.server.port=${PORT_PROWLARR:?err}
 
   ###########################################################################
   # Sonarr - TV Shows Management
@@ -178,7 +171,7 @@ services:
     restart: unless-stopped
     volumes:
       - ${PATH_DATA:?err}/sonarr:/config
-      - ${PATH_MEDIA:?err}:/data
+      - ${PATH_MEDIA:?err}:/media
     environment:
 #      - PUID=${PUID:?err}
 #      - PGID=${PGID:?err}
@@ -191,14 +184,12 @@ services:
       - ${PORT_SONARR:?err}:8989
     labels:
       - traefik.enable=true
-        # Routers
       - traefik.http.routers.sonarr.service=sonarr
       - traefik.http.routers.sonarr.rule=Host(`sonarr.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`sonarr.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.sonarr.entrypoints=websecure
       - traefik.http.routers.sonarr.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-        # Services
       - traefik.http.services.sonarr.loadbalancer.server.scheme=http
-      - traefik.http.services.sonarr.loadbalancer.server.port=8989
+      - traefik.http.services.sonarr.loadbalancer.server.port=${PORT_SONARR:?err}
 
   ###########################################################################
   # Radarr - Movies Management
@@ -209,7 +200,7 @@ services:
     restart: unless-stopped
     volumes:
       - ${PATH_DATA:?err}/radarr:/config
-      - ${PATH_MEDIA:?err}:/data
+      - ${PATH_MEDIA:?err}:/media
     environment:
 #      - PUID=${PUID:?err}
 #      - PGID=${PGID:?err}
@@ -222,14 +213,12 @@ services:
       - ${PORT_RADARR:?err}:7878
     labels:
       - traefik.enable=true
-        # Routers
       - traefik.http.routers.radarr.service=radarr
       - traefik.http.routers.radarr.rule=Host(`radarr.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`radarr.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.radarr.entrypoints=websecure
       - traefik.http.routers.radarr.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-        # Services
       - traefik.http.services.radarr.loadbalancer.server.scheme=http
-      - traefik.http.services.radarr.loadbalancer.server.port=7878
+      - traefik.http.services.radarr.loadbalancer.server.port=${PORT_RADARR:?err}
 
   ###########################################################################
   # Lidarr - Music Management
@@ -240,7 +229,7 @@ services:
     restart: unless-stopped
     volumes:
       - ${PATH_DATA:?err}/lidarr:/config
-      - ${PATH_MEDIA:?err}:/data
+      - ${PATH_MEDIA:?err}:/media
     environment:
 #      - PUID=${PUID:?err}
 #      - PGID=${PGID:?err}
@@ -253,14 +242,12 @@ services:
       - ${PORT_LIDARR:?err}:8686
     labels:
       - traefik.enable=true
-        # Routers
       - traefik.http.routers.lidarr.service=lidarr
       - traefik.http.routers.lidarr.rule=Host(`lidarr.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`lidarr.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.lidarr.entrypoints=websecure
       - traefik.http.routers.lidarr.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-        # Services
       - traefik.http.services.lidarr.loadbalancer.server.scheme=http
-      - traefik.http.services.lidarr.loadbalancer.server.port=8686
+      - traefik.http.services.lidarr.loadbalancer.server.port=${PORT_LIDARR:?err}
 
   ###########################################################################
   # Readarr - Books Management
@@ -271,7 +258,7 @@ services:
     restart: unless-stopped
     volumes:
       - ${PATH_DATA:?err}/readarr:/config
-      - ${PATH_MEDIA:?err}:/data
+      - ${PATH_MEDIA:?err}:/media
     environment:
 #      - PUID=${PUID:?err}
 #      - PGID=${PGID:?err}
@@ -284,14 +271,12 @@ services:
       - ${PORT_READARR:?err}:8787
     labels:
       - traefik.enable=true
-        # Routers
       - traefik.http.routers.readarr.service=readarr
       - traefik.http.routers.readarr.rule=Host(`readarr.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`readarr.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.readarr.entrypoints=websecure
       - traefik.http.routers.readarr.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-        # Services
       - traefik.http.services.readarr.loadbalancer.server.scheme=http
-      - traefik.http.services.readarr.loadbalancer.server.port=8787
+      - traefik.http.services.readarr.loadbalancer.server.port=${PORT_READARR:?err}
 
   ###########################################################################
   # Bazarr - Subtitles Management
@@ -302,7 +287,7 @@ services:
     restart: unless-stopped
     volumes:
       - ${PATH_DATA:?err}/bazarr:/config
-      - ${PATH_MEDIA:?err}:/data
+      - ${PATH_MEDIA:?err}:/media
     environment:
 #      - PUID=${PUID:?err}
 #      - PGID=${PGID:?err}
@@ -315,14 +300,12 @@ services:
       - media
     labels:
       - traefik.enable=true
-        # Routers
       - traefik.http.routers.bazarr.service=bazarr
       - traefik.http.routers.bazarr.rule=Host(`bazarr.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`bazarr.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.bazarr.entrypoints=websecure
       - traefik.http.routers.bazarr.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-        # Services
       - traefik.http.services.bazarr.loadbalancer.server.scheme=http
-      - traefik.http.services.bazarr.loadbalancer.server.port=6767
+      - traefik.http.services.bazarr.loadbalancer.server.port=${PORT_BAZARR:?err}
 
   ###########################################################################
   # Flaresolverr - Cloudflare Bypass
@@ -342,14 +325,12 @@ services:
       - ${PORT_FLARESOLVERR:?err}:8191
     labels:
       - traefik.enable=true
-        # Routers
       - traefik.http.routers.flaresolverr.service=flaresolverr
       - traefik.http.routers.flaresolverr.rule=Host(`flaresolverr.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`flaresolverr.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.flaresolverr.entrypoints=websecure
       - traefik.http.routers.flaresolverr.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-        # Services
       - traefik.http.services.flaresolverr.loadbalancer.server.scheme=http
-      - traefik.http.services.flaresolverr.loadbalancer.server.port=8191
+      - traefik.http.services.flaresolverr.loadbalancer.server.port=${PORT_FLARESOLVERR:?err}
 
   ###########################################################################
   # Unpackerr - Extraction Service
@@ -362,7 +343,7 @@ services:
     volumes:
       - ${PATH_DATA:?err}/unpackerr:/config
       - ${PATH_DATA:?err}/unpackerr/logs:/var/log
-      - ${PATH_MEDIA:?err}:/data
+      - ${PATH_MEDIA:?err}:/media
     networks:
       - media
     ports:
@@ -499,7 +480,7 @@ services:
     restart: unless-stopped
     volumes:
       - ${PATH_DATA:?err}/filebot:/data/filebot
-      - ${PATH_MEDIA:?err}/filebot:/filebot
+      - ${PATH_MEDIA:?err}:/media
     environment:
 #      - XPRA_AUTH=password:value=YOUR_PASSWORD
 #      - PUID=${PUID:?err}
@@ -513,14 +494,12 @@ services:
       - media
     labels:
       - traefik.enable=true
-        # Routers
       - traefik.http.routers.filebot.service=filebot
       - traefik.http.routers.filebot.rule=Host(`filebot.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`filebot.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.filebot.entrypoints=websecure
       - traefik.http.routers.filebot.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-        # Services
       - traefik.http.services.filebot.loadbalancer.server.scheme=http
-      - traefik.http.services.filebot.loadbalancer.server.port=5454
+      - traefik.http.services.filebot.loadbalancer.server.port=${PORT_FILEBOT:?err}
 
   ###########################################################################
   # Tdarr - Video Transcoding
@@ -530,7 +509,7 @@ services:
     container_name: tdarr
     restart: unless-stopped
     volumes:
-      - ${PATH_MEDIA:?err}/media:/data
+      - ${PATH_MEDIA:?err}:/media
       - ${PATH_DATA:?err}/tdarr/server:/app/server
       - ${PATH_DATA:?err}/tdarr/configs:/app/configs
       - ${PATH_DATA:?err}/tdarr/logs:/app/logs
@@ -552,12 +531,10 @@ services:
       - ${PORT_TDARR:?err}:8266
     labels:
       - traefik.enable=true
-        # Routers
       - traefik.http.routers.tdarr.service=tdarr
       - traefik.http.routers.tdarr.rule=Host(`tdarr.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`tdarr.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.tdarr.entrypoints=websecure
       - traefik.http.routers.tdarr.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-        # Services
       - traefik.http.services.tdarr.loadbalancer.server.scheme=http
       - traefik.http.services.tdarr.loadbalancer.server.port=${PORT_TDARR:?err}
   tdarr-node:
@@ -565,7 +542,7 @@ services:
     container_name: tdarr-node
     restart: unless-stopped
     volumes:
-      - ${PATH_MEDIA:?err}/media:/data
+      - ${PATH_MEDIA:?err}:/media
       - ${PATH_DATA:?err}/tdarr/configs:/app/configs
       - ${PATH_DATA:?err}/tdarr/logs:/app/logs
       - ${PATH_DATA:?err}/tdarr-node:/temp
@@ -599,14 +576,12 @@ services:
       - ${PORT_HUNTARR:?err}:9705
     labels:
       - traefik.enable=true
-        # Routers
       - traefik.http.routers.huntarr.service=huntarr
       - traefik.http.routers.huntarr.rule=Host(`huntarr.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`huntarr.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.huntarr.entrypoints=websecure
       - traefik.http.routers.huntarr.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-        # Services
       - traefik.http.services.huntarr.loadbalancer.server.scheme=http
-      - traefik.http.services.huntarr.loadbalancer.server.port=9705
+      - traefik.http.services.huntarr.loadbalancer.server.port=${PORT_HUNTARR:?err}
 
   ###########################################################################
   # Mylar - Comics Management
@@ -617,7 +592,7 @@ services:
     restart: unless-stopped
     volumes:
       - ${PATH_DATA:?err}/mylar:/config
-      - ${PATH_MEDIA:?err}:/data
+      - ${PATH_MEDIA:?err}:/media
     environment:
 #      - PUID=${PUID:?err}
 #      - PGID=${PGID:?err}
@@ -630,14 +605,12 @@ services:
       - ${PORT_MYLAN:?err}:8090
     labels:
       - traefik.enable=true
-      # Routers
       - traefik.http.routers.mylar.service=mylar
       - traefik.http.routers.mylar.rule=Host(`mylar.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`mylar.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.mylar.entrypoints=websecure
       - traefik.http.routers.mylar.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-      # Services
       - traefik.http.services.mylar.loadbalancer.server.scheme=http
-      - traefik.http.services.mylar.loadbalancer.server.port=8090
+      - traefik.http.services.mylar.loadbalancer.server.port=${PORT_MYLAN:?err}
 
   ###########################################################################
   # Whisparr - Adult Media Management
@@ -648,7 +621,7 @@ services:
     restart: unless-stopped
     volumes:
       - ${PATH_DATA:?err}/whisparr:/config
-      - ${PATH_MEDIA:?err}:/data
+      - ${PATH_MEDIA:?err}:/media
     environment:
 #      - PUID=${PUID:?err}
 #      - PGID=${PGID:?err}
@@ -660,14 +633,12 @@ services:
       - ${PORT_WHISPARR:?err}:6969
     labels:
       - traefik.enable=true
-      # Routers
       - traefik.http.routers.whisparr.service=whisparr
       - traefik.http.routers.whisparr.rule=Host(`whisparr.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`whisparr.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.whisparr.entrypoints=websecure
       - traefik.http.routers.whisparr.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-      # Services
       - traefik.http.services.whisparr.loadbalancer.server.scheme=http
-      - traefik.http.services.whisparr.loadbalancer.server.port=6969
+      - traefik.http.services.whisparr.loadbalancer.server.port=${PORT_WHISPARR:?err}
 
   ###########################################################################
   # Portainer - Docker Management
@@ -682,17 +653,7 @@ services:
     ports:
       - "${PORT_PORTAINER_AGENT:?err}:9001"
     environment:
-      - AGENT_CLUSTER_ADDR="192.168.1.191"
-    labels:
-      - traefik.enable=true
-        # Routers
-      - traefik.http.routers.portainer-agent.service=portainer-agent
-      - traefik.http.routers.portainer-agent.entrypoints=websecure
-      - traefik.http.routers.portainer-agent.rule=Host(`portainer-agent-media.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`portainer-agent-media.${INTRANET_DOMAIN:?err}`)
-      - traefik.http.routers.portainer-agent.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-        # Services
-      - traefik.http.services.portainer-agent.loadbalancer.server.scheme=http
-      - traefik.http.services.portainer-agent.loadbalancer.server.port=9001
+      - AGENT_CLUSTER_ADDR="192.168.1.191" 
     networks:
       - media
 

@@ -26,7 +26,7 @@ resource "proxmox_vm_qemu" "srv-dev" {
     cpu_type = "host"
     
     # VM Memory Settings
-    memory = 8192
+    memory = 16384
 
     # VM Network Settings
     network {

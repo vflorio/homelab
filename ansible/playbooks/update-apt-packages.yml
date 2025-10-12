@@ -1,6 +1,6 @@
 - hosts: "{{ hosts }}"
 
-  become: yes
+  become: true
   tasks:
     # Upgrade packages
     - name: upgrade apt packages

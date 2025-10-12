@@ -44,14 +44,12 @@ services:
       - ./traefik:/etc/traefik
     labels:
       - traefik.enable=true
-      # Routers
       - traefik.http.routers.traefik.service=api@internal
       - traefik.http.routers.traefik.rule=Host(`traefik.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`traefik.${INTRANET_DOMAIN:?err}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))
       - traefik.http.routers.traefik.entrypoints=websecure
       - traefik.http.routers.traefik.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-      # Services
       - traefik.http.services.traefik.loadbalancer.server.scheme=http
-      - traefik.http.services.traefik.loadbalancer.server.port=8080
+      - traefik.http.services.traefik.loadbalancer.server.port=${PORT_TRAEFIK:?err}
 
   ###########################################################################
   # Authentik - Authentication & SSO
@@ -96,15 +94,13 @@ services:
         restart: true
     labels:
       - traefik.enable=true
-      # Routers
       - traefik.http.routers.authentik.service=authentik
       - traefik.http.routers.authentik.rule=Host(`auth.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`auth.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.authentik.entrypoints=websecure
       - traefik.http.routers.authentik.middlewares=security-headers@file,traefik-bouncer@file
       # Do not add authentik-forwardauth@file to middlewares, otherwise other applications can't authenticate
-      # Services
       - traefik.http.services.authentik.loadbalancer.server.scheme=http
-      - traefik.http.services.authentik.loadbalancer.server.port=9000
+      - traefik.http.services.authentik.loadbalancer.server.port=${PORT_AUTHENTIK:?err}
 
   authentic-worker:
     image: ghcr.io/goauthentik/server:${AUTHENTIK_VERSION:?err}
@@ -179,15 +175,13 @@ services:
       - TZ=${TIMEZONE:?err}
     labels:
       - traefik.enable=true
-      # Routers
       - traefik.http.routers.headscale.service=headscale
       - traefik.http.routers.headscale.rule=Host(`headscale.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`headscale.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.headscale.entrypoints=websecure
       - traefik.http.routers.headscale.middlewares=security-headers@file,traefik-bouncer@file
       # Do not add authentik-forwardauth@file to middlewares, otherwise Tailscale clients can't authenticate and connect
-      # Services
       - traefik.http.services.headscale.loadbalancer.server.scheme=http
-      - traefik.http.services.headscale.loadbalancer.server.port=8080
+      - traefik.http.services.headscale.loadbalancer.server.port=${PORT_HEADSCALE_CONNECT:?err}
 
   ###########################################################################
   # Headplane - Headscale Web UI
@@ -209,14 +203,12 @@ services:
       - TZ=${TIMEZONE:?err}
     labels:
       - traefik.enable=true
-      # Routers
       - traefik.http.routers.headplane.service=headplane
       - traefik.http.routers.headplane.rule=(Host(`headplane.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`headplane.${INTRANET_DOMAIN:?err}`)) && PathPrefix(`/admin/`)
       - traefik.http.routers.headplane.entrypoints=websecure
       - traefik.http.routers.headplane.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-      # Services
       - traefik.http.services.headplane.loadbalancer.server.scheme=http
-      - traefik.http.services.headplane.loadbalancer.server.port=3000
+      - traefik.http.services.headplane.loadbalancer.server.port=${PORT_HEADPLANE:?err}
 
   ###########################################################################
   # DDNS Updater - Dynamic DNS
@@ -257,12 +249,10 @@ services:
       - gateway
     labels:
       - traefik.enable=true
-      # Routers
       - traefik.http.routers.ddns-updater.service=ddns-updater
       - traefik.http.routers.ddns-updater.rule=Host(`ddns-updater.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`ddns-updater.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.ddns-updater.entrypoints=websecure
       - traefik.http.routers.ddns-updater.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-      # Services
       - traefik.http.services.ddns-updater.loadbalancer.server.scheme=http
       - traefik.http.services.ddns-updater.loadbalancer.server.port=${PORT_DDNS_UPDATER:?err}
 
@@ -280,16 +270,6 @@ services:
       - "${PORT_PORTAINER_AGENT:?err}:9001"
     environment:
       - AGENT_CLUSTER_ADDR="192.168.1.191"
-    labels:
-      - traefik.enable=true
-      # Routers
-      - traefik.http.routers.portainer-agent.service=portainer-agent
-      - traefik.http.routers.portainer-agent.entrypoints=websecure
-      - traefik.http.routers.portainer-agent.rule=Host(`portainer-agent-gateway.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`portainer-agent-gateway.${INTRANET_DOMAIN:?err}`)
-      - traefik.http.routers.portainer-agent.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-      # Services
-      - traefik.http.services.portainer-agent.loadbalancer.server.scheme=http
-      - traefik.http.services.portainer-agent.loadbalancer.server.port=9001
     networks:
       - gateway
 

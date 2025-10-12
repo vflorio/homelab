@@ -30,22 +30,21 @@ services:
     ports:
       - "${PORT_NEXTCLOUD:?err}:80"
     labels:
-      - "traefik.enable=true"
-      # ROUTERS
+      - traefik.enable=true
       - traefik.http.routers.nextcloud.service=nextcloud
       - traefik.http.routers.nextcloud.entrypoints=websecure
       - traefik.http.routers.nextcloud.rule=Host(`nextcloud.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`nextcloud.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.nextcloud.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-      # SERVICES
       - traefik.http.services.nextcloud.loadbalancer.server.scheme=http
-      - traefik.http.services.nextcloud.loadbalancer.server.port=9001
+      - traefik.http.services.nextcloud.loadbalancer.server.port=${PORT_NEXTCLOUD:?err}
     networks:
       - cloud
     environment:
-      - POSTGRES_HOST=nextcloud-postgresql
+      - POSTGRES_HOST=nextcloud-postgresql:${PORT_POSTGRES:?err}
       - POSTGRES_DB=${NEXTCLOUD_DATABASE:?err}
       - POSTGRES_USER=${POSTGRES_USER:?err}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?err}
+      - REDIS_HOST=valkey
 
   ###########################################################################
   # OnlyOffice - Document Server
@@ -60,22 +59,18 @@ services:
       - ${PATH_DATA:?err}/onlyoffice/data:/var/www/onlyoffice/Data
       - ${PATH_DATA:?err}/onlyoffice/logs:/var/log/onlyoffice
     environment:
-      - DB_TYPE=postgres
-      - DB_HOST=nextcloud-postgresql
-      - DB_NAME=${NEXTCLOUD_DATABASE:?err}
-      - DB_USER=${POSTGRES_USER:?err}
-      - DB_PWD=${POSTGRES_PASSWORD:?err}
-      - JWT_ENABLED=false
+      - POSTGRES_HOST=nextcloud-postgresql
+      - POSTGRES_DB=${NEXTCLOUD_DATABASE:?err}
+      - POSTGRES_USER=${POSTGRES_USER:?err}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?err}
     labels:
-      - "traefik.enable=true"
-      # ROUTERS
+      - traefik.enable=true
       - traefik.http.routers.onlyoffice.service=onlyoffice
       - traefik.http.routers.onlyoffice.entrypoints=websecure
-      - traefik.http.routers.onlyoffice.rule=Host(`portainer-agent-gateway.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`portainer-agent-gateway.${INTRANET_DOMAIN:?err}`)
+      - traefik.http.routers.onlyoffice.rule=Host(`onlyoffice.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`onlyoffice.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.onlyoffice.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-      # SERVICES
       - traefik.http.services.onlyoffice.loadbalancer.server.scheme=http
-      - traefik.http.services.onlyoffice.loadbalancer.server.port=80
+      - traefik.http.services.onlyoffice.loadbalancer.server.port=${PORT_ONLYOFFICE:?err}
     networks:
       - cloud
 
@@ -106,6 +101,26 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?err}
 
   ###########################################################################
+  # Valkey - Redis Cache
+  ###########################################################################
+  valkey:
+    image: valkey/valkey:alpine
+    container_name: valkey
+    command: --save 60 1 --loglevel warning
+    restart: unless-stopped
+    networks:
+      - cloud
+#    user: ${PUID:?err}:${PGID:?err}
+    ports:
+      - ${PORT_VALKEY:?err}:6379
+    healthcheck:
+      test: ["CMD-SHELL", "valkey-cli ping | grep PONG"]
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 3s
+
+  ###########################################################################
   # Portainer - Docker Management
   ###########################################################################
   portainer-agent:
@@ -119,16 +134,6 @@ services:
       - "${PORT_PORTAINER_AGENT:?err}:9001"
     environment:
       - AGENT_CLUSTER_ADDR="192.168.1.191"
-    labels:
-      - traefik.enable=true
-      # ROUTERS
-      - traefik.http.routers.portainer-agent.service=portainer-agent
-      - traefik.http.routers.portainer-agent.entrypoints=websecure
-      - traefik.http.routers.portainer-agent.rule=Host(`portainer-agent-gateway.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`portainer-agent-gateway.${INTRANET_DOMAIN:?err}`)
-      - traefik.http.routers.portainer-agent.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-      # SERVICES
-      - traefik.http.services.portainer-agent.loadbalancer.server.scheme=http
-      - traefik.http.services.portainer-agent.loadbalancer.server.port=9001
     networks:
       - cloud
 

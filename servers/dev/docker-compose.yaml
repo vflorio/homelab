@@ -15,9 +15,7 @@ networks:
 
 volumes:
   postgresql-data:
-  gitea-data:
-  registry-data:
-  verdaccio-data:
+    driver: local
 
 services:
   ###########################################################################
@@ -34,16 +32,6 @@ services:
       - "${PORT_PORTAINER_AGENT:?err}:9001"
     environment:
       - AGENT_CLUSTER_ADDR="192.168.1.191"
-    labels:
-      - traefik.enable=true
-      # ROUTERS
-      - traefik.http.routers.portainer-agent.service=portainer-agent
-      - traefik.http.routers.portainer-agent.entrypoints=websecure
-      - traefik.http.routers.portainer-agent.rule=Host(`portainer-agent-gateway.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`portainer-agent-gateway.${INTRANET_DOMAIN:?err}`)
-      - traefik.http.routers.portainer-agent.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-      # SERVICES
-      - traefik.http.services.portainer-agent.loadbalancer.server.scheme=http
-      - traefik.http.services.portainer-agent.loadbalancer.server.port=9001
     networks:
       - dev
 
@@ -82,22 +70,20 @@ services:
     user: "0:0"
     environment:
       - CODER_HTTP_ADDRESS=0.0.0.0:7080
-      #- CODER_ACCESS_URL=https://coder.${INTRANET_DOMAIN:?err}
-      #- CODER_WILDCARD_ACCESS_URL=*.coder.${INTRANET_DOMAIN:?err}
+      - CODER_ACCESS_URL=https://coder.${CLOUDFLARE_DNS_ZONE:?err}
+      - CODER_WILDCARD_ACCESS_URL=*.coder.${INTRANET_DOMAIN:?err}
       - CODER_PG_CONNECTION_URL=postgres://${POSTGRES_USER:?err}:${POSTGRES_PASSWORD:?err}@postgres:5432/${POSTGRES_DB:?err}?sslmode=disable
       - TZ=${TIMEZONE:?err}
     depends_on:
       - postgres
     labels:
       - traefik.enable=true
-      # ROUTERS
       - traefik.http.routers.coder.service=coder
       - traefik.http.routers.coder.entrypoints=websecure
       - traefik.http.routers.coder.rule=Host(`coder.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`coder.${INTRANET_DOMAIN:?err}`) || HostRegexp(`{subdomain:[a-zA-Z0-9-]+}.coder.${INTRANET_DOMAIN:?err}`)
-      - traefik.http.routers.coder.middlewares=security-headers@file,traefik-bouncer@file
-      # SERVICES
+      - traefik.http.routers.coder.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
       - traefik.http.services.coder.loadbalancer.server.scheme=http
-      - traefik.http.services.coder.loadbalancer.server.port=7080
+      - traefik.http.services.coder.loadbalancer.server.port=${PORT_CODER:?err}
     networks:
       - dev
 
@@ -143,14 +129,12 @@ services:
       - postgres
     labels:
       - traefik.enable=true
-      # ROUTERS
       - traefik.http.routers.gitea.service=gitea
       - traefik.http.routers.gitea.entrypoints=websecure
       - traefik.http.routers.gitea.rule=Host(`gitea.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`gitea.${INTRANET_DOMAIN:?err}`)
-      - traefik.http.routers.gitea.middlewares=security-headers@file,traefik-bouncer@file
-      # SERVICES
+      - traefik.http.routers.gitea.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
       - traefik.http.services.gitea.loadbalancer.server.scheme=http
-      - traefik.http.services.gitea.loadbalancer.server.port=3000
+      - traefik.http.services.gitea.loadbalancer.server.port=${PORT_GITEA:?err}
     networks:
       - dev
 
@@ -172,14 +156,12 @@ services:
       - REGISTRY_AUTH_HTPASSWD_PATH=/var/lib/registry/auth/htpasswd
     labels:
       - traefik.enable=true
-      # ROUTERS
       - traefik.http.routers.registry.service=registry
       - traefik.http.routers.registry.entrypoints=websecure
       - traefik.http.routers.registry.rule=Host(`container-registry.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`container-registry.${INTRANET_DOMAIN:?err}`)
-      - traefik.http.routers.registry.middlewares=security-headers@file,traefik-bouncer@file
-      # SERVICES
+      - traefik.http.routers.registry.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
       - traefik.http.services.registry.loadbalancer.server.scheme=http
-      - traefik.http.services.registry.loadbalancer.server.port=5000
+      - traefik.http.services.registry.loadbalancer.server.port=${PORT_REGISTRY:?err}
     networks:
       - dev
 
@@ -191,22 +173,22 @@ services:
     container_name: verdaccio
     restart: unless-stopped
     ports:
-      - "${PORT_VERDACCIO:?err}:4873"
+      - "${PORT_VERDACCIO:?err}:${PORT_VERDACCIO:?err}"
     volumes:
       - ${PATH_DATA:?err}/verdaccio:/verdaccio
+      - "./verdaccio:/verdaccio/conf"
     environment:
       - VERDACCIO_USER_NAME=${VERDACCIO_USER:?err}
       - VERDACCIO_USER_PWD=${VERDACCIO_PASSWORD:?err}
+      - VERDACCIO_PORT=${PORT_VERDACCIO:?err}
     labels:
       - traefik.enable=true
-      # ROUTERS
       - traefik.http.routers.verdaccio.service=verdaccio
       - traefik.http.routers.verdaccio.entrypoints=websecure
       - traefik.http.routers.verdaccio.rule=Host(`npm.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`npm.${INTRANET_DOMAIN:?err}`)
-      - traefik.http.routers.verdaccio.middlewares=security-headers@file,traefik-bouncer@file
-      # SERVICES
+      - traefik.http.routers.verdaccio.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
       - traefik.http.services.verdaccio.loadbalancer.server.scheme=http
-      - traefik.http.services.verdaccio.loadbalancer.server.port=4873
+      - traefik.http.services.verdaccio.loadbalancer.server.port=${PORT_VERDACCIO:?err}
     networks:
       - dev
 
@@ -221,14 +203,12 @@ services:
       - "${PORT_EXCALIDRAW:?err}:80"
     labels:
       - traefik.enable=true
-      # ROUTERS
       - traefik.http.routers.excalidraw.service=excalidraw
       - traefik.http.routers.excalidraw.entrypoints=websecure
       - traefik.http.routers.excalidraw.rule=Host(`excalidraw.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`excalidraw.${INTRANET_DOMAIN:?err}`)
-      - traefik.http.routers.excalidraw.middlewares=security-headers@file,traefik-bouncer@file
-      # SERVICES
+      - traefik.http.routers.excalidraw.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
       - traefik.http.services.excalidraw.loadbalancer.server.scheme=http
-      - traefik.http.services.excalidraw.loadbalancer.server.port=80
+      - traefik.http.services.excalidraw.loadbalancer.server.port=${PORT_EXCALIDRAW}
     networks:
       - dev
 
@@ -243,13 +223,11 @@ services:
       - "${PORT_DRAWIO:?err}:8080"
     labels:
       - traefik.enable=true
-      # ROUTERS
       - traefik.http.routers.drawio.service=drawio
       - traefik.http.routers.drawio.entrypoints=websecure
       - traefik.http.routers.drawio.rule=Host(`drawio.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`drawio.${INTRANET_DOMAIN:?err}`)
-      - traefik.http.routers.drawio.middlewares=security-headers@file,traefik-bouncer@file
-      # SERVICES
+      - traefik.http.routers.drawio.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
       - traefik.http.services.drawio.loadbalancer.server.scheme=http
-      - traefik.http.services.drawio.loadbalancer.server.port=8080
+      - traefik.http.services.drawio.loadbalancer.server.port=${PORT_DRAWIO}
     networks:
       - dev
