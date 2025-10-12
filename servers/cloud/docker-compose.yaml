@@ -16,6 +16,8 @@ networks:
 volumes:
   nextcloud-postgres-data:
     driver: local
+  immich-postgres-data:
+    driver: local
 
 services:
   ###########################################################################
@@ -74,9 +76,6 @@ services:
     networks:
       - cloud
 
-  ###########################################################################
-  # PostgreSQL - Shared Database
-  ###########################################################################
   nextcloud-postgresql:
     image: docker.io/library/postgres:latest
     container_name: nextcloud-postgresql
@@ -99,6 +98,64 @@ services:
       - POSTGRES_DB=${NEXTCLOUD_DATABASE:?err}
       - POSTGRES_USER=${POSTGRES_USER:?err}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?err}
+
+  ###########################################################################
+  # Immich - Photo Management
+  ###########################################################################
+  immich:
+    container_name: immich
+    image: ghcr.io/immich-app/immich-server:release
+    volumes:
+      - ${PATH_DATA}/immich:/data
+      - ${PATH_MEDIA:?err}:/media
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - ${PORT_IMMICH:?err}:2283
+    depends_on:
+      - immich-postgresql
+      - valkey
+    restart: always
+    environment:
+      - DB_HOSTNAME=immich-postgresql
+      - DB_PORT=5432
+      - DB_DATABASE_NAME=${IMMICH_DATABASE}
+      - DB_USERNAME=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - REDIS_HOSTNAME=valkey
+      - REDIS_PORT=6379
+      - IMMICH_MACHINE_LEARNING_ENABLED=false
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.immich.service=immich
+      - traefik.http.routers.immich.entrypoints=websecure
+      - traefik.http.routers.immich.rule=Host(`immich.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`immich.${INTRANET_DOMAIN:?err}`)
+      - traefik.http.routers.immich.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
+      - traefik.http.services.immich.loadbalancer.server.scheme=http
+      - traefik.http.services.immich.loadbalancer.server.port=${PORT_IMMICH:?err}
+    healthcheck:
+      disable: false
+    networks:
+      - cloud
+
+  immich-postgresql:
+    container_name: immich-postgresql
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0@sha256:41eacbe83eca995561fe43814fd4891e16e39632806253848efaf04d3c8a8b84
+    environment:
+      - POSTGRES_DB=${IMMICH_DATABASE}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_INITDB_ARGS='--data-checksums'
+    volumes:
+      - immich-postgres-data:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - cloud
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d ${IMMICH_DATABASE} -U ${POSTGRES_USER}"]
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 5s
 
   ###########################################################################
   # Valkey - Redis Cache

@@ -17,7 +17,9 @@
 - PostgreSQL (Shared Database)
 - Valkey/Redis (Cache)
 - Homepage/Heimdall/Homarr (Dashboards)
-- VaultWarden (Password manager)
+- [TODO] VaultWarden (Password manager)
+- [TODO] scrutiny (Disk monitoring)
+- [TODO] Netdata (Network monitoring)
 
 (media server)
 
@@ -42,3 +44,4 @@
 (cloud server)
 - Nextcloud (Cloud storage)
 - OnlyOffice (Office suite)
+- Immich (Photo management)

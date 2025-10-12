@@ -166,17 +166,17 @@ services:
     environment:
       #- UMASK=${UMASK:?err}
       - TZ=${TIMEZONE:?err}
-      - HOMEPAGE_ALLOWED_HOSTS=homepage.${CLOUDFLARE_DNS_ZONE:?err},homepage.${INTRANET_DOMAIN:?err},${INTRANET_DOMAIN:?err}:${PORT_HOMEPAGE:?err}
+      - HOMEPAGE_ALLOWED_HOSTS=home.${CLOUDFLARE_DNS_ZONE:?err},home.${INTRANET_DOMAIN:?err},${INTRANET_DOMAIN:?err}:${PORT_HOMEPAGE:?err}
     networks:
       - management
     labels:
       - traefik.enable=true
-      - traefik.http.routers.homepage.service=homepage
-      - traefik.http.routers.homepage.entrypoints=websecure
-      - traefik.http.routers.homepage.rule=Host(`homepage.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`homepage.${INTRANET_DOMAIN:?err}`)
-      - traefik.http.routers.homepage.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
-      - traefik.http.services.homepage.loadbalancer.server.scheme=http
-      - traefik.http.services.homepage.loadbalancer.server.port=${PORT_HOMEPAGE:?err}
+      - traefik.http.routers.home.service=homepage
+      - traefik.http.routers.home.entrypoints=websecure
+      - traefik.http.routers.home.rule=Host(`home.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`home.${INTRANET_DOMAIN:?err}`)
+      - traefik.http.routers.home.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
+      - traefik.http.services.home.loadbalancer.server.scheme=http
+      - traefik.http.services.home.loadbalancer.server.port=${PORT_HOMEPAGE:?err}
 
   ###########################################################################
   # Semaphore - Ansible Web UI / Frontend
