@@ -31,7 +31,7 @@ services:
     #user: root
     environment:
       - TZ=${TIMEZONE:?err}
-      - CF_DNS_API_TOKEN=${CLOUDFLARE_DNS_API_TOKEN:?err}
+      - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN:?err}
     ports:
       - ${PORT_REVERSE_PROXY_HTTP:?err}:80
       - ${PORT_REVERSE_PROXY_HTTPS:?err}:443
@@ -45,7 +45,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.traefik.service=api@internal
-      - traefik.http.routers.traefik.rule=Host(`traefik.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`traefik.${INTRANET_DOMAIN:?err}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))
+      - traefik.http.routers.traefik.rule=Host(`traefik.${CF_DNS_ZONE:?err}`) || Host(`traefik.${INTRANET_DOMAIN:?err}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))
       - traefik.http.routers.traefik.entrypoints=websecure
       - traefik.http.routers.traefik.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
       - traefik.http.services.traefik.loadbalancer.server.scheme=http
@@ -95,7 +95,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.authentik.service=authentik
-      - traefik.http.routers.authentik.rule=Host(`auth.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`auth.${INTRANET_DOMAIN:?err}`)
+      - traefik.http.routers.authentik.rule=Host(`auth.${CF_DNS_ZONE:?err}`) || Host(`auth.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.authentik.entrypoints=websecure
       - traefik.http.routers.authentik.middlewares=security-headers@file,traefik-bouncer@file
       # Do not add authentik-forwardauth@file to middlewares, otherwise other applications can't authenticate
@@ -176,7 +176,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.headscale.service=headscale
-      - traefik.http.routers.headscale.rule=Host(`headscale.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`headscale.${INTRANET_DOMAIN:?err}`)
+      - traefik.http.routers.headscale.rule=Host(`headscale.${CF_DNS_ZONE:?err}`) || Host(`headscale.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.headscale.entrypoints=websecure
       - traefik.http.routers.headscale.middlewares=security-headers@file,traefik-bouncer@file
       # Do not add authentik-forwardauth@file to middlewares, otherwise Tailscale clients can't authenticate and connect
@@ -204,7 +204,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.headplane.service=headplane
-      - traefik.http.routers.headplane.rule=(Host(`headplane.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`headplane.${INTRANET_DOMAIN:?err}`)) && PathPrefix(`/admin/`)
+      - traefik.http.routers.headplane.rule=(Host(`headplane.${CF_DNS_ZONE:?err}`) || Host(`headplane.${INTRANET_DOMAIN:?err}`)) && PathPrefix(`/admin/`)
       - traefik.http.routers.headplane.entrypoints=websecure
       - traefik.http.routers.headplane.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
       - traefik.http.services.headplane.loadbalancer.server.scheme=http
@@ -250,7 +250,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.ddns-updater.service=ddns-updater
-      - traefik.http.routers.ddns-updater.rule=Host(`ddns-updater.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`ddns-updater.${INTRANET_DOMAIN:?err}`)
+      - traefik.http.routers.ddns-updater.rule=Host(`ddns-updater.${CF_DNS_ZONE:?err}`) || Host(`ddns-updater.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.ddns-updater.entrypoints=websecure
       - traefik.http.routers.ddns-updater.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
       - traefik.http.services.ddns-updater.loadbalancer.server.scheme=http
@@ -320,3 +320,19 @@ services:
       timeout: 3s
     volumes:
       - ${PATH_DATA:?err}/valkey:/data
+
+  ###########################################################################
+  # Traefik-KOP - Service Discovery Agent
+  ###########################################################################
+  traefik-kop:
+    image: "ghcr.io/jittering/traefik-kop:latest"
+    container_name: traefik-kop
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - "REDIS_ADDR=valkey:6379"
+      - "REDIS_DB=1"
+      - "BIND_IP=${LOCAL_DOCKER_IP:?err}"
+    networks:
+      - gateway

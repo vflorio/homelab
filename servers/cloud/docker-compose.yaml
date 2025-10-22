@@ -35,7 +35,7 @@ services:
       - traefik.enable=true
       - traefik.http.routers.nextcloud.service=nextcloud
       - traefik.http.routers.nextcloud.entrypoints=websecure
-      - traefik.http.routers.nextcloud.rule=Host(`nextcloud.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`nextcloud.${INTRANET_DOMAIN:?err}`)
+      - traefik.http.routers.nextcloud.rule=Host(`nextcloud.${CF_DNS_ZONE:?err}`) || Host(`nextcloud.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.nextcloud.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
       - traefik.http.services.nextcloud.loadbalancer.server.scheme=http
       - traefik.http.services.nextcloud.loadbalancer.server.port=${PORT_NEXTCLOUD:?err}
@@ -69,7 +69,7 @@ services:
       - traefik.enable=true
       - traefik.http.routers.onlyoffice.service=onlyoffice
       - traefik.http.routers.onlyoffice.entrypoints=websecure
-      - traefik.http.routers.onlyoffice.rule=Host(`onlyoffice.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`onlyoffice.${INTRANET_DOMAIN:?err}`)
+      - traefik.http.routers.onlyoffice.rule=Host(`onlyoffice.${CF_DNS_ZONE:?err}`) || Host(`onlyoffice.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.onlyoffice.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
       - traefik.http.services.onlyoffice.loadbalancer.server.scheme=http
       - traefik.http.services.onlyoffice.loadbalancer.server.port=${PORT_ONLYOFFICE:?err}
@@ -128,7 +128,7 @@ services:
       - traefik.enable=true
       - traefik.http.routers.immich.service=immich
       - traefik.http.routers.immich.entrypoints=websecure
-      - traefik.http.routers.immich.rule=Host(`immich.${CLOUDFLARE_DNS_ZONE:?err}`) || Host(`immich.${INTRANET_DOMAIN:?err}`)
+      - traefik.http.routers.immich.rule=Host(`immich.${CF_DNS_ZONE:?err}`) || Host(`immich.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.immich.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
       - traefik.http.services.immich.loadbalancer.server.scheme=http
       - traefik.http.services.immich.loadbalancer.server.port=${PORT_IMMICH:?err}
