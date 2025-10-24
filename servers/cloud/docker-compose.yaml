@@ -24,7 +24,7 @@ services:
   # Nextcloud - Cloud Storage
   ###########################################################################
   nextcloud:
-    image: nextcloud:latest
+    image: nextcloud:stable
     container_name: nextcloud
     restart: unless-stopped
     volumes:
@@ -47,6 +47,32 @@ services:
       - POSTGRES_USER=${POSTGRES_USER:?err}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?err}
       - REDIS_HOST=valkey
+      - NEXTCLOUD_ADMIN_USER=${NEXTCLOUD_ADMIN_USER:?err}
+      - NEXTCLOUD_ADMIN_PASSWORD=${NEXTCLOUD_ADMIN_PASSWORD:?err}
+      - NEXTCLOUD_TRUSTED_DOMAINS=nextcloud.${CF_DNS_ZONE:?err} nextcloud.${INTRANET_DOMAIN:?err} localhost 127.0.0.1 nextcloud-postgresql
+
+  nextcloud-postgresql:
+    image: docker.io/library/postgres:16-alpine
+    container_name: nextcloud-postgresql
+    restart: unless-stopped
+    networks:
+      - cloud
+    # user: ${PUID:?err}:${PGID:?err}  # FIXME
+    ports:
+      - ${PORT_POSTGRES:?err}:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d ${NEXTCLOUD_DATABASE} -U ${POSTGRES_USER}"]
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 5s
+    volumes:
+      - nextcloud-postgres-data:/var/lib/postgresql/data
+    environment:
+      - TZ=${TIMEZONE:?err}
+      - POSTGRES_DB=${NEXTCLOUD_DATABASE:?err}
+      - POSTGRES_USER=${POSTGRES_USER:?err}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?err}
 
   ###########################################################################
   # OnlyOffice - Document Server
@@ -75,29 +101,6 @@ services:
       - traefik.http.services.onlyoffice.loadbalancer.server.port=${PORT_ONLYOFFICE:?err}
     networks:
       - cloud
-
-  nextcloud-postgresql:
-    image: docker.io/library/postgres:latest
-    container_name: nextcloud-postgresql
-    restart: unless-stopped
-    networks:
-      - cloud
-    # user: ${PUID:?err}:${PGID:?err}  # FIXME
-    ports:
-      - ${PORT_POSTGRES:?err}:5432
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -d ${NEXTCLOUD_DATABASE} -U ${POSTGRES_USER}"]
-      start_period: 20s
-      interval: 30s
-      retries: 5
-      timeout: 5s
-    volumes:
-      - nextcloud-postgres-data:/var/lib/postgresql/data
-    environment:
-      - TZ=${TIMEZONE:?err}
-      - POSTGRES_DB=${NEXTCLOUD_DATABASE:?err}
-      - POSTGRES_USER=${POSTGRES_USER:?err}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?err}
 
   ###########################################################################
   # Immich - Photo Management

@@ -122,16 +122,16 @@ services:
       - GITEA__database__NAME=${POSTGRES_DB:?err}
       - GITEA__database__USER=${POSTGRES_USER:?err}
       - GITEA__database__PASSWD=${POSTGRES_PASSWORD:?err}
-      - GITEA__server__DOMAIN=gitea.${CF_DNS_ZONE:?err}
-      - GITEA__server__SSH_DOMAIN=gitea.${CF_DNS_ZONE:?err}
-      - GITEA__server__ROOT_URL=https://gitea.${CF_DNS_ZONE:?err}/
+      - GITEA__server__DOMAIN=git.${CF_DNS_ZONE:?err}
+      - GITEA__server__SSH_DOMAIN=git.${CF_DNS_ZONE:?err}
+      - GITEA__server__ROOT_URL=https://git.${CF_DNS_ZONE:?err}/
     depends_on:
       - postgres
     labels:
       - traefik.enable=true
       - traefik.http.routers.gitea.service=gitea
       - traefik.http.routers.gitea.entrypoints=websecure
-      - traefik.http.routers.gitea.rule=Host(`gitea.${CF_DNS_ZONE:?err}`) || Host(`gitea.${INTRANET_DOMAIN:?err}`)
+      - traefik.http.routers.gitea.rule=Host(`git.${CF_DNS_ZONE:?err}`) || Host(`git.${INTRANET_DOMAIN:?err}`)
       - traefik.http.routers.gitea.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
       - traefik.http.services.gitea.loadbalancer.server.scheme=http
       - traefik.http.services.gitea.loadbalancer.server.port=${PORT_GITEA:?err}
