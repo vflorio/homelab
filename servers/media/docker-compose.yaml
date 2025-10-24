@@ -47,6 +47,31 @@ services:
       - traefik.http.services.jellyfin.loadbalancer.server.port=${PORT_JELLYFIN:?err}
 
   ###########################################################################
+  # Emby - Media Streaming Server
+  ###########################################################################
+  emby:
+    image: emby/embyserver:latest
+    container_name: emby
+    restart: unless-stopped
+    volumes:
+      - ${PATH_MEDIA:?err}:/mnt/media/
+      - ${PATH_DATA:?err}/emby:/config
+    environment:
+      - TZ=${TIMEZONE:?err}
+    networks:
+      - media
+    ports:
+      - ${PORT_EMBY:?err}:8096
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.emby.service=emby
+      - traefik.http.routers.emby.rule=Host(`emby.${CF_DNS_ZONE:?err}`) || Host(`emby.${INTRANET_DOMAIN:?err}`)
+      - traefik.http.routers.emby.entrypoints=websecure
+      - traefik.http.routers.emby.middlewares=authentik-forwardauth@file,security-headers@file,traefik-bouncer@file
+      - traefik.http.services.emby.loadbalancer.server.scheme=http
+      - traefik.http.services.emby.loadbalancer.server.port=${PORT_EMBY:?err}
+
+  ###########################################################################
   # Jellyseerr - Media Request Management
   ###########################################################################
   jellyseerr:
