@@ -17,6 +17,10 @@ networks:
 volumes:
   authentik-postgres-data:
     driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PATH_DATA:?err}/postgres/data
 
 services:
   ###########################################################################

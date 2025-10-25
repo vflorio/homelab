@@ -195,7 +195,7 @@ resource "docker_container" "workspace" {
   }
   volumes {
     container_path = "/workspaces"
-    host_path      = "/mnt/ssd-0/homelab/workspaces"
+    host_path      = "/mnt/ssd-0/homelab-data/workspaces"
     read_only      = false
   }
   

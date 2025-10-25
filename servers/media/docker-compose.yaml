@@ -54,7 +54,7 @@ services:
     container_name: emby
     restart: unless-stopped
     volumes:
-      - ${PATH_MEDIA:?err}:/mnt/media/
+      - ${PATH_MEDIA:?err}/ssd-0:/mnt/media/
       - ${PATH_DATA:?err}/emby:/config
     environment:
       - TZ=${TIMEZONE:?err}

@@ -17,12 +17,13 @@
 - PostgreSQL (Shared Database)
 - Valkey/Redis (Cache)
 - Homepage/Heimdall/Homarr (Dashboards)
+- Semaphore (Ansible UI)
 - [TODO] VaultWarden (Password manager)
 - [TODO] scrutiny (Disk monitoring)
 
 (media server)
 
-- Jellyfin/Plex (Media Streaming)
+- Jellyfin/Emby (Media Streaming)
 - Sonarr/Radarr/Lidarr/Readarr (Automation)
 - Prowlarr (Indexer Management)
 - qBittorrent/SABnzbd (Download)
@@ -36,7 +37,7 @@
 - Gitea (Git repository server)
 - Container Registry (Docker Registry)
 - Verdaccio (Private NPM Store)
-- Code Server (VS Code nel browser)
+- Coder (VS Code nel browser)
 - Excalidraw (Sketching)
 - Drawio (Sketching)
 
